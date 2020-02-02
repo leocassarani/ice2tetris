@@ -7,7 +7,7 @@ all: $(PROJ).rpt $(PROJ).bin
 	yosys -ql $*.log -p 'synth_ice40 -top $(PROJ) -json $@' $< $(ADD_SRC)
 
 %.asc: $(PIN_DEF) %.json
-	nextpnr-ice40 --$(DEVICE) --json $(filter-out $<,$^) --pcf $< --asc $@
+	nextpnr-ice40 --$(DEVICE) --package sg48 --json $(filter-out $<,$^) --pcf $< --asc $@
 
 %.bin: %.asc
 	icepack -s $< $@
