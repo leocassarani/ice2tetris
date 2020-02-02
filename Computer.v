@@ -28,7 +28,7 @@ end
 assign LEDR_N = flash;
 assign LEDG_N = !flash;
 
-wire [14:0] pc;
+wire [15:0] pc;
 wire [15:0] instr;
 
 ROM rom (

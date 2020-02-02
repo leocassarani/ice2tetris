@@ -1,6 +1,6 @@
 module ROM (
   input clk,
-  input [14:0] address,
+  input [15:0] address,
   output reg [15:0] instruction,
 
   output spi_cs, output spi_sclk, output spi_mosi,
