@@ -98,12 +98,12 @@ always @(posedge clk) begin
           state <= 5;
         end
         5: begin
-          rdata[7:0] <= buffer;
+          rdata[15:8] <= buffer; // Big-endian
           xfer_cnt <= 8;
           state <= 6;
         end
         6: begin
-          rdata[15:8] <= buffer;
+          rdata[7:0] <= buffer;
           ready <= 1;
         end
       endcase

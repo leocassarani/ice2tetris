@@ -28,12 +28,12 @@ end
 assign LEDR_N = flash;
 assign LEDG_N = !flash;
 
-wire [14:0] addr;
+wire [14:0] pc;
 wire [15:0] instr;
 
 ROM rom (
   .clk(CLK),
-  .address(addr),
+  .address(pc),
   .instruction(instr),
 
   .spi_cs(FLASH_SSB),
@@ -45,12 +45,13 @@ ROM rom (
 CPU cpu (
   .clk(clkdiv_pulse),
   .reset(!BTN_N),
-  .pc(addr),
+  .instruction(instr),
+  .pc(pc),
 );
 
 Screen screen (
   .clk(CLK),
-  .value(instr[7:0]),
+  .value(pc[7:0]),
   .seven_segment({ P1A10, P1A9, P1A8, P1A7, P1A4, P1A3, P1A2, P1A1 }),
 );
 
