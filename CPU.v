@@ -1,6 +1,6 @@
 module CPU (
   input clk, reset,
-  output [15:0] pc,
+  output [14:0] pc,
 );
 
 ProgramCounter program_counter (
@@ -14,7 +14,7 @@ endmodule
 
 module ProgramCounter (
   input clk, inc, reset,
-  output reg [15:0] out,
+  output reg [14:0] out,
 );
 
 always @(posedge clk) begin

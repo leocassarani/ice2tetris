@@ -8,6 +8,12 @@ set_io BTN_N      10
 set_io LEDR_N     11
 set_io LEDG_N     37
 
+# SPI Flash
+set_io FLASH_SCK  15
+set_io FLASH_SSB  16
+set_io FLASH_IO0  14
+set_io FLASH_IO1  17
+
 # PMOD 1A
 set_io P1A1        4
 set_io P1A2        2
