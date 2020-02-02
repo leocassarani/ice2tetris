@@ -1,0 +1,10 @@
+*.asc
+*.bin
+*.blif
+*.blog
+*.json
+*.log
+*.nplog
+*.rpt
+*.vlog
+*.yslog
