@@ -1,6 +1,9 @@
 # 12 MHz clock
 set_io CLK        35
 
+# Buttons
+set_io BTN_N      10
+
 # LEDs
 set_io LEDR_N     11
 set_io LEDG_N     37
