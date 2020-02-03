@@ -13,7 +13,7 @@ Mux4 x_mux (
   .a(x),
   .b(~x),
   .c(0),
-  .d(1),
+  .d(~0),
   .sel({zx, nx}),
   .out(x_result),
 );
@@ -22,7 +22,7 @@ Mux4 y_mux (
   .a(y),
   .b(~y),
   .c(0),
-  .d(1),
+  .d(~0),
   .sel({zy, ny}),
   .out(y_result),
 );
