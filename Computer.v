@@ -26,10 +26,14 @@ always @(posedge clkdiv_pulse) begin
 end
 
 assign LEDR_N = flash;
-assign LEDG_N = !flash;
+assign LEDG_N = ~flash;
 
 wire [15:0] pc;
 wire [15:0] instr;
+wire [15:0] mem_in;
+wire [15:0] mem_out;
+wire [14:0] mem_addr;
+wire mem_write;
 
 ROM rom (
   .clk(CLK),
@@ -42,10 +46,22 @@ ROM rom (
   .spi_miso(FLASH_IO1),
 );
 
+Memory memory (
+  .clk(CLK),
+  .in(mem_out),
+  .load(mem_write),
+  .address(mem_addr),
+  .out(mem_in),
+);
+
 CPU cpu (
   .clk(clkdiv_pulse),
   .reset(!BTN_N),
   .instruction(instr),
+  .memory_in(mem_in),
+  .memory_out(mem_out),
+  .memory_write(mem_write),
+  .memory_address(mem_addr),
   .pc(pc),
 );
 

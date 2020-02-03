@@ -14,7 +14,7 @@ Mux4 x_mux (
   .b(~x),
   .c(0),
   .d(1),
-  .sel({nx, zx}),
+  .sel({zx, nx}),
   .out(x_result),
 );
 
@@ -23,12 +23,12 @@ Mux4 y_mux (
   .b(~y),
   .c(0),
   .d(1),
-  .sel({ny, zy}),
+  .sel({zy, ny}),
   .out(y_result),
 );
 
-wire [15:0] result = f ? x & y : x + y;
-assign out = no ? result : ~result;
+wire [15:0] result = f ? x_result + y_result : x_result & y_result;
+assign out = no ? ~result : result;
 
 assign zr = ~|out[15:0]; // zr = NOR(out)
 assign ng = out[15];
@@ -45,9 +45,9 @@ module Mux4 (
 );
 
 assign out = sel[1] ? (
-  sel[0] ? a : b
+  sel[0] ? d : c
 ) : (
-  sel[0] ? c : d
+  sel[0] ? b : a
 );
 
 endmodule
