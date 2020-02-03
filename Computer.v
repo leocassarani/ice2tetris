@@ -11,6 +11,16 @@ reg [23:0] clkdiv = 0;
 reg clkdiv_pulse = 0;
 reg flash = 0;
 
+wire [15:0] pc;
+wire [15:0] instr;
+wire [15:0] mem_in;
+wire [15:0] mem_out;
+wire [14:0] mem_addr;
+wire mem_write;
+
+assign LEDR_N = !mem_write;
+assign LEDG_N = flash;
+
 always @(posedge CLK) begin
   if (clkdiv == 12000000) begin
     clkdiv <= 0;
@@ -24,16 +34,6 @@ end
 always @(posedge clkdiv_pulse) begin
   flash <= ~flash;
 end
-
-assign LEDR_N = flash;
-assign LEDG_N = ~flash;
-
-wire [15:0] pc;
-wire [15:0] instr;
-wire [15:0] mem_in;
-wire [15:0] mem_out;
-wire [14:0] mem_addr;
-wire mem_write;
 
 ROM rom (
   .clk(CLK),
@@ -67,7 +67,7 @@ CPU cpu (
 
 Screen screen (
   .clk(CLK),
-  .value(pc[7:0]),
+  .value(mem_out[7:0]),
   .seven_segment({ P1A10, P1A9, P1A8, P1A7, P1A4, P1A3, P1A2, P1A1 }),
 );
 

@@ -9,7 +9,7 @@ module Memory (
 RAM ram (
   .clk(clk),
   .in(in),
-  .load(load & ~address[14]),
+  .load(load && !address[14]),
   .address(address[13:0]),
   .out(out),
 );
@@ -26,14 +26,14 @@ module RAM (
 
 SB_SPRAM256KA spram (
   .CLOCK(clk),
-  .CHIPSELECT(1'b1),
+  .CHIPSELECT(1),
   .ADDRESS(address),
   .WREN(load),
   .MASKWREN(4'b1111),
   .DATAIN(in),
-  .STANDBY(1'b0),
-  .SLEEP(1'b0),
-  .POWEROFF(1'b1),
+  .STANDBY(0),
+  .SLEEP(0),
+  .POWEROFF(1),
   .DATAOUT(out),
 );
 

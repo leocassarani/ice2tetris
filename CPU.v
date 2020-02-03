@@ -12,18 +12,16 @@ module CPU (
 reg [15:0] a_reg;
 reg [15:0] d_reg;
 
-wire [15:0] y = instruction[12] ? memory_in : a_reg;
-
 wire [15:0] alu_out;
 wire zero, negative;
 
-wire jump = instruction[15] & (
-  (instruction[2] & negative) |
-  (instruction[1] & zero) |
-  (instruction[0] & ~(negative | zero))
+wire jump = instruction[15] && (
+  (instruction[2] && negative) ||
+  (instruction[1] && zero) ||
+  (instruction[0] && !(negative || zero))
 );
 
-assign memory_write = instruction[15] & instruction[3];
+assign memory_write = instruction[15] && instruction[3];
 assign memory_address = a_reg[14:0];
 assign memory_out = alu_out;
 
@@ -43,7 +41,7 @@ end
 
 ALU alu (
   .x(d_reg),
-  .y(y),
+  .y(instruction[12] ? memory_in : a_reg),
   .zx(instruction[11]),
   .nx(instruction[10]),
   .zy(instruction[9]),
