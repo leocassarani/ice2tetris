@@ -1,12 +1,22 @@
 module Screen (
   input clk,
-  input [7:0] value,
+  input [15:0] in,
+  input load,
+  input [13:0] address,
   output [7:0] seven_segment,
 );
 
+reg [15:0] pixel;
+
+always @(posedge clk) begin
+  if (load) begin
+    pixel <= in;
+  end
+end
+
 seven_seg_ctrl seven_segment_ctrl (
   .clk(clk),
-  .din(value[7:0]),
+  .din(pixel[7:0]),
   .dout(seven_segment)
 );
 
