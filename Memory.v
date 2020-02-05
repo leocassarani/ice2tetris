@@ -3,7 +3,8 @@ module Memory (
   input [15:0] in,
   input load,
   input [14:0] address,
-  input [2:0] keyboard_buttons,
+  input ps2_data,
+  inout ps2_clk,
   output [7:0] seven_segment,
   output [15:0] out,
 );
@@ -31,7 +32,8 @@ Screen screen (
 
 Keyboard keyboard (
   .clk(clk),
-  .buttons(keyboard_buttons),
+  .ps2_data(ps2_data),
+  .ps2_clk(ps2_clk),
   .out(keyboard_out),
 );
 

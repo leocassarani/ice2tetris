@@ -20,6 +20,10 @@ set_io P1A8       48
 set_io P1A9       46
 set_io P1A10      44
 
+# PMOD 1B
+set_io P1B1       43
+set_io P1B3       34
+
 # Buttons (PMOD 2)
 set_io BTN1       20
 set_io BTN2       19
