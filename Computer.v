@@ -1,27 +1,24 @@
 module Computer (
   input CLK,
-  output LEDR_N, LEDG_N,
+  input P1B1, P1B3,
+  output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
+  output LEDR_N,
 );
 
-reg [23:0] clkdiv = 0;
-reg clkdiv_pulse = 0;
-reg flash = 0;
+wire [7:0] ps2_out;
 
-always @(posedge CLK) begin
-  if (clkdiv == 12000000) begin
-    clkdiv <= 0;
-    clkdiv_pulse <= 1;
-  end else begin
-    clkdiv <= clkdiv + 1;
-    clkdiv_pulse <= 0;
-  end
-end
+seven_seg_ctrl seven_segment (
+  .clk(CLK),
+  .din(ps2_out),
+  .dout({ P1A10, P1A9, P1A8, P1A7, P1A4, P1A3, P1A2, P1A1 }),
+);
 
-always @(posedge clkdiv_pulse) begin
-  flash <= ~flash;
-end
-
-assign LEDR_N = flash;
-assign LEDG_N = !flash;
+ps2_receiver ps2 (
+  .clk(CLK),
+  .ps2_clk(P1B3),
+  .ps2_data(P1B1),
+  .out(ps2_out),
+  .ready(LEDR_N),
+);
 
 endmodule
