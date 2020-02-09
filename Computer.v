@@ -18,8 +18,10 @@ ps2_receiver ps2 (
   .clk(CLK),
   .ps2_clk(P1B3),
   .ps2_data(P1B1),
-  .out(ps2_out),
+  .tx(BTN1),
+  .tx_data(8'hFE),
   .idle_out(LEDR_N),
+  .out(ps2_out),
 );
 
 endmodule
