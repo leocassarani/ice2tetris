@@ -4,7 +4,8 @@ module ps2_receiver (
   input tx,
   input [7:0] tx_data,
   output reg [7:0] out,
-  output reg idle_out,
+  output ready,
+  output [3:0] out_state,
 );
 
 parameter [0:255] PARITY = {
@@ -60,6 +61,8 @@ parameter [3:0] idle                       = 4'd0,
                 tx_no_ack                  = 4'd13;
 
 reg [3:0] state = idle;
+assign ready = state == idle;
+assign out_state = state;
 
 reg [3:0] rx_count = 0, tx_count = 0;
 reg [10:0] frame;
@@ -109,16 +112,15 @@ always @(posedge clk) begin
 
   case (state)
     idle: begin
-      idle_out <= 1;
       rx_count <= 0;
       tx_count <= 0;
 
       // If the device pulls the clock line low, start receiving.
       if (ps2_clk_low) begin
-        idle_out <= 0;
         state <= rx_down_edge;
       end else if (tx) begin
-        frame <= { 1'b0, PARITY[tx_data], 1'b1, tx_data }; // 0 = padding
+        out <= 0;
+        frame <= { 1'b0, 1'b1, PARITY[tx_data], tx_data }; // 0 = padding
         state <= tx_force_clk_low;
       end
     end
@@ -153,6 +155,7 @@ always @(posedge clk) begin
       delay_100us_enable <= 1;
 
       if (delay_100us) begin
+        delay_100us_enable <= 0;
         state <= tx_data_down;
       end
     end
@@ -164,14 +167,17 @@ always @(posedge clk) begin
       delay_20us_enable <= 1;
 
       if (delay_20us) begin
+        delay_20us_enable <= 0;
         ps2_clk_output_enable <= 0;
         state <= tx_wait_first_down_edge;
       end
     end
 
     tx_wait_first_down_edge: begin
-      // TODO: wait 63 clock cycles?!
-      if (ps2_clk_low) begin
+      delay_63clks_enable <= 1;
+
+      if (delay_63clks && ps2_clk_low) begin
+        delay_63clks_enable <= 0;
         state <= tx_clk_low;
       end
     end
@@ -224,13 +230,16 @@ end
 parameter [10:0] DELAY_100US = 11'd1200; // 100µs × 12MHz = 1200
 parameter [7:0] DELAY_20US = 8'd240;     // 20µs × 12MHz = 240
 
-reg delay_100us_enable, delay_20us_enable;
+reg delay_100us_enable, delay_20us_enable, delay_63clks_enable;
 
 reg [10:0] delay_100us_count;
 wire delay_100us = delay_100us_count == DELAY_100US;
 
 reg [7:0] delay_20us_count;
 wire delay_20us = delay_20us_count == DELAY_20US;
+
+reg [5:0] delay_63clks_count;
+wire delay_63clks = delay_63clks_count == 6'd63;
 
 // TODO: extract into a parameterised module.
 always @(posedge clk) begin
@@ -248,6 +257,14 @@ always @(posedge clk) begin
     end
   end else begin
     delay_20us_count <= 0;
+  end
+
+  if (delay_63clks_enable) begin
+    if (!delay_63clks) begin
+      delay_63clks_count <= delay_63clks_count + 1;
+    end
+  end else begin
+    delay_63clks_count <= 0;
   end
 end
 
