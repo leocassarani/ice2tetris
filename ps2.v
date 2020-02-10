@@ -8,7 +8,7 @@ module ps2_receiver (
   output [3:0] out_state,
 );
 
-parameter [0:255] PARITY = {
+localparam [0:255] PARITY = {
   1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b1, 1'b1, 1'b0,
   1'b0, 1'b1, 1'b1, 1'b0, 1'b1, 1'b0, 1'b0, 1'b1,
   1'b0, 1'b1, 1'b1, 1'b0, 1'b1, 1'b0, 1'b0, 1'b1,
@@ -43,22 +43,22 @@ parameter [0:255] PARITY = {
   1'b0, 1'b1, 1'b1, 1'b0, 1'b1, 1'b0, 1'b0, 1'b1
 };
 
-parameter [3:0] BITS_PER_FRAME = 4'd11; // 11
+localparam [3:0] BITS_PER_FRAME = 4'd11;
 
-parameter [3:0] idle                       = 4'd0,
-                rx_clk_high                = 4'd1,
-                rx_clk_low                 = 4'd2,
-                rx_down_edge               = 4'd3,
-                tx_force_clk_low           = 4'd4,
-                tx_data_down               = 4'd5,
-                tx_wait_first_down_edge    = 4'd6,
-                tx_clk_low                 = 4'd7,
-                tx_wait_up_edge            = 4'd8,
-                tx_clk_high                = 4'd9,
-                tx_wait_up_edge_before_ack = 4'd10,
-                tx_wait_ack                = 4'd11,
-                tx_got_ack                 = 4'd12,
-                tx_no_ack                  = 4'd13;
+localparam [3:0] idle                       = 4'd0,
+                 rx_clk_high                = 4'd1,
+                 rx_clk_low                 = 4'd2,
+                 rx_down_edge               = 4'd3,
+                 tx_force_clk_low           = 4'd4,
+                 tx_data_down               = 4'd5,
+                 tx_wait_first_down_edge    = 4'd6,
+                 tx_clk_low                 = 4'd7,
+                 tx_wait_up_edge            = 4'd8,
+                 tx_clk_high                = 4'd9,
+                 tx_wait_up_edge_before_ack = 4'd10,
+                 tx_wait_ack                = 4'd11,
+                 tx_got_ack                 = 4'd12,
+                 tx_no_ack                  = 4'd13;
 
 reg [3:0] state = idle;
 assign ready = state == idle;
@@ -69,7 +69,7 @@ reg [10:0] frame;
 
 reg [7:0] ps2_clk_debounce = 8'b10101010;
 wire ps2_clk_high = ps2_clk_debounce[7:3] == 5'b11111;
-wire ps2_clk_low  = ps2_clk_debounce[7:3] == 5'b0000;
+wire ps2_clk_low  = ps2_clk_debounce[7:3] == 5'b00000;
 
 wire ps2_clk_rx, ps2_data_rx;
 
@@ -80,6 +80,9 @@ reg ps2_clk_output, ps2_data_output;
 
 wire ps2_clk_tx = ps2_clk_output_enable ? ps2_clk_output : 0;
 wire ps2_data_tx = ps2_data_output_enable ? ps2_data_output : 0;
+
+reg delay_100us_enable, delay_20us_enable, delay_63clks_enable;
+wire delay_100us, delay_20us, delay_63clkd;
 
 (* PULLUP_RESISTOR = "10K" *)
 SB_IO #(
@@ -105,6 +108,33 @@ SB_IO #(
   .OUTPUT_ENABLE(ps2_data_output_enable),
   .D_IN_0(ps2_data_rx),
   .D_OUT_0(ps2_data_tx),
+);
+
+delay #(
+  .duration(11'd1200), // 100µs × 12MHz = 1200
+  .width(11),
+) delay_100us (
+  .clk(clk),
+  .enable(delay_100us_enable),
+  .done(delay_100us),
+);
+
+delay #(
+  .duration(8'd240), // 20µs × 12MHz = 240
+  .width(8),
+) delay_20us (
+  .clk(clk),
+  .enable(delay_20us_enable),
+  .done(delay_20us),
+);
+
+delay #(
+  .duration(6'd63),
+  .width(6),
+) delay_63clks (
+  .clk(clk),
+  .enable(delay_63clks_enable),
+  .done(delay_63clks),
 );
 
 always @(posedge clk) begin
@@ -227,44 +257,27 @@ always @(posedge clk) begin
   endcase
 end
 
-parameter [10:0] DELAY_100US = 11'd1200; // 100µs × 12MHz = 1200
-parameter [7:0] DELAY_20US = 8'd240;     // 20µs × 12MHz = 240
+endmodule
 
-reg delay_100us_enable, delay_20us_enable, delay_63clks_enable;
+module delay #(
+  parameter duration = 0,
+  parameter width = 0,
+) (
+  input clk,
+  input enable,
+  output done,
+);
 
-reg [10:0] delay_100us_count;
-wire delay_100us = delay_100us_count == DELAY_100US;
+reg [(width - 1):0] count;
+assign done = count == duration;
 
-reg [7:0] delay_20us_count;
-wire delay_20us = delay_20us_count == DELAY_20US;
-
-reg [5:0] delay_63clks_count;
-wire delay_63clks = delay_63clks_count == 6'd63;
-
-// TODO: extract into a parameterised module.
 always @(posedge clk) begin
-  if (delay_100us_enable) begin
-    if (!delay_100us) begin
-      delay_100us_count <= delay_100us_count + 1;
+  if (enable) begin
+    if (!done) begin
+      count <= count + 1;
     end
   end else begin
-    delay_100us_count <= 0;
-  end
-
-  if (delay_20us_enable) begin
-    if (!delay_20us) begin
-      delay_20us_count <= delay_20us_count + 1;
-    end
-  end else begin
-    delay_20us_count <= 0;
-  end
-
-  if (delay_63clks_enable) begin
-    if (!delay_63clks) begin
-      delay_63clks_count <= delay_63clks_count + 1;
-    end
-  end else begin
-    delay_63clks_count <= 0;
+    count <= 0;
   end
 end
 
