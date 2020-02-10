@@ -82,7 +82,7 @@ wire ps2_clk_tx = ps2_clk_output_enable ? ps2_clk_output : 0;
 wire ps2_data_tx = ps2_data_output_enable ? ps2_data_output : 0;
 
 reg delay_100us_enable, delay_20us_enable, delay_63clks_enable;
-wire delay_100us, delay_20us, delay_63clkd;
+wire delay_100us_done, delay_20us_done, delay_63clks_done;
 
 (* PULLUP_RESISTOR = "10K" *)
 SB_IO #(
@@ -116,7 +116,7 @@ delay #(
 ) delay_100us (
   .clk(clk),
   .enable(delay_100us_enable),
-  .done(delay_100us),
+  .done(delay_100us_done),
 );
 
 delay #(
@@ -125,7 +125,7 @@ delay #(
 ) delay_20us (
   .clk(clk),
   .enable(delay_20us_enable),
-  .done(delay_20us),
+  .done(delay_20us_done),
 );
 
 delay #(
@@ -134,7 +134,7 @@ delay #(
 ) delay_63clks (
   .clk(clk),
   .enable(delay_63clks_enable),
-  .done(delay_63clks),
+  .done(delay_63clks_done),
 );
 
 always @(posedge clk) begin
@@ -184,7 +184,7 @@ always @(posedge clk) begin
 
       delay_100us_enable <= 1;
 
-      if (delay_100us) begin
+      if (delay_100us_done) begin
         delay_100us_enable <= 0;
         state <= tx_data_down;
       end
@@ -196,7 +196,7 @@ always @(posedge clk) begin
 
       delay_20us_enable <= 1;
 
-      if (delay_20us) begin
+      if (delay_20us_done) begin
         delay_20us_enable <= 0;
         ps2_clk_output_enable <= 0;
         state <= tx_wait_first_down_edge;
@@ -206,7 +206,7 @@ always @(posedge clk) begin
     tx_wait_first_down_edge: begin
       delay_63clks_enable <= 1;
 
-      if (delay_63clks && ps2_clk_low) begin
+      if (delay_63clks_done && ps2_clk_low) begin
         delay_63clks_enable <= 0;
         state <= tx_clk_low;
       end
