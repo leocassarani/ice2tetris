@@ -111,8 +111,7 @@ SB_IO #(
 );
 
 delay #(
-  .duration(11'd1200), // 100µs × 12MHz = 1200
-  .width(11),
+  .DURATION(11'd1200), // 100µs × 12MHz = 1200
 ) delay_100us (
   .clk(clk),
   .enable(delay_100us_enable),
@@ -120,8 +119,7 @@ delay #(
 );
 
 delay #(
-  .duration(8'd240), // 20µs × 12MHz = 240
-  .width(8),
+  .DURATION(8'd240), // 20µs × 12MHz = 240
 ) delay_20us (
   .clk(clk),
   .enable(delay_20us_enable),
@@ -129,8 +127,7 @@ delay #(
 );
 
 delay #(
-  .duration(6'd63),
-  .width(6),
+  .DURATION(6'd63),
 ) delay_63clks (
   .clk(clk),
   .enable(delay_63clks_enable),
@@ -260,16 +257,18 @@ end
 endmodule
 
 module delay #(
-  parameter duration = 0,
-  parameter width = 0,
+  parameter DURATION = 0,
 ) (
   input clk,
   input enable,
   output done,
 );
 
-reg [(width - 1):0] count;
-assign done = count == duration;
+// Add 1 to ensure we maintain an upper bound if DURATION is a power of 2.
+localparam BIT_LENGTH = $clog2(DURATION) + 1;
+
+reg [(BIT_LENGTH - 1):0] count;
+assign done = count == DURATION;
 
 always @(posedge clk) begin
   if (enable) begin
