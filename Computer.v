@@ -20,7 +20,7 @@ Keyboard keyboard (
   .ps2_data(P1B1),
   .btn1(BTN1),
   .idle_out(LEDR_N),
-  .out(keyboard_out),
+  .key_press(keyboard_out),
 );
 
 endmodule

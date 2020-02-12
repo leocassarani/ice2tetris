@@ -3,130 +3,140 @@ module Keyboard (
   inout ps2_clk, ps2_data,
   input btn1,
   output idle_out,
-  output reg [7:0] out,
+  output [7:0] key_press,
 );
 
-reg [1:0] state = 0;
-
-reg tx = 0;
+reg ps2_write = 0;
 reg [7:0] tx_data;
-reg [7:0] param, key_release;
 
-wire ps2_ready;
-assign idle_out = ps2_ready;
+wire ps2_busy;
+assign idle_out = !ps2_busy;
 
-wire [3:0] ps2_state;
-wire [7:0] ps2_out;
+wire ps2_read;
+wire [7:0] rx_data;
 
-localparam [2:0] idle = 3'd0,
-                 key_down = 3'd1,
-                 wait_for_ack = 3'd2,
-                 wait_for_key_up_scan_code = 3'd3,
-                 send_multi_byte_command = 3'd4;
+localparam [1:0] idle = 2'd0,
+                 wait_for_ack = 2'd1,
+                 wait_for_key_up = 2'd2;
 
-reg state = idle;
+reg [1:0] state = idle;
+
+reg [7:0] scan_code;
+reg [15:0] key_down;
+
+assign key_press = ascii(key_down);
+
+ps2_receiver ps2 (
+  .clk(clk),
+  .ps2_clk(ps2_clk),
+  .ps2_data(ps2_data),
+  .write(ps2_write),
+  .tx_data(tx_data),
+  .read(ps2_read),
+  .rx_data(rx_data),
+  .busy(ps2_busy),
+);
 
 always @(posedge clk) begin
+  if (ps2_read) begin
+    scan_code <= rx_data;
+  end
+
   case (state)
     idle: begin
-      tx <= 0;
-
-      case (ps2_out)
-        8'h58: begin
-          if (ps2_ready) begin
-            tx_data <= 8'hED;
-            param <= 8'b100;
-            tx <= 1;
-            state <= send_multi_byte_command;
-          end
-        end
-
+      case (scan_code)
         8'hAA: begin
-          if (ps2_ready) begin
-            tx_data <= 8'hF4; // Enable scanning
-            tx <= 1;
+          if (!ps2_busy) begin
+            tx_data <= 8'hF4;
+            ps2_write <= 1;
             state <= wait_for_ack;
           end
         end
 
-        8'hFA: begin
-           //Do nothing
-        end
-
         8'hF0: begin
-          state <= wait_for_key_up_scan_code;
+          state <= wait_for_key_up;
         end
 
         default: begin
-          if (key_release != ps2_out) begin
-            state <= key_down;
-          end
+          key_down <= scan_code;
         end
       endcase
     end
 
-    key_down: begin
-      case (ps2_out)
-        8'h16: out <= 8'h01;
-        8'h1C: out <= 8'h0A;
-        8'h1E: out <= 8'h02;
-        8'h21: out <= 8'h0C;
-        8'h23: out <= 8'h0D;
-        8'h24: out <= 8'h0E;
-        8'h25: out <= 8'h04;
-        8'h26: out <= 8'h03;
-        8'h2B: out <= 8'h0F;
-        8'h2E: out <= 8'h05;
-        8'h32: out <= 8'h0B;
-        8'h36: out <= 8'h06;
-        8'h3D: out <= 8'h07;
-        8'h3E: out <= 8'h08;
-        8'h44: out <= 8'h00;
-        8'h45: out <= 8'h00;
-        8'h46: out <= 8'h09;
-        default: out <= ps2_out;
-      endcase
-
-      state <= idle;
-    end
-
     wait_for_ack: begin
-      tx <= 0;
+      ps2_write <= 0;
 
-      if (ps2_ready && ps2_out == 8'hFA) begin
+      if (scan_code == 8'hFA) begin
         state <= idle;
       end
     end
 
-    wait_for_key_up_scan_code: begin
-      if (ps2_ready && ps2_out != 8'hF0) begin
-        key_release <= ps2_out;
-        out <= 0;
-        state <= idle;
+    wait_for_key_up: begin
+      if (scan_code == key_down) begin
+        key_down <= 0;
       end
-    end
 
-    send_multi_byte_command: begin
-      tx <= 0;
-
-      if (ps2_ready && ps2_out == 8'hFA) begin
-        tx_data <= param;
-        tx <= 1;
+      if (scan_code != 8'hF0) begin
+        scan_code <= 0;
         state <= idle;
       end
     end
   endcase
 end
 
-ps2_receiver ps2 (
-  .clk(clk),
-  .ps2_clk(ps2_clk),
-  .ps2_data(ps2_data),
-  .tx(tx),
-  .tx_data(tx_data),
-  .ready(ps2_ready),
-  .out(ps2_out),
-  .out_state(ps2_state),
-);
+function [7:0] ascii(input [15:0] key);
+  case (key)
+    16'h0E: ascii = "`";
+    16'h1A: ascii = "z";
+    16'h15: ascii = "q";
+    16'h16: ascii = "1";
+    16'h1B: ascii = "s";
+    16'h1C: ascii = "a";
+    16'h1D: ascii = "w";
+    16'h1E: ascii = "2";
+    16'h21: ascii = "c";
+    16'h22: ascii = "x";
+    16'h23: ascii = "d";
+    16'h24: ascii = "e";
+    16'h25: ascii = "4";
+    16'h26: ascii = "3";
+    16'h29: ascii = " ";
+    16'h2A: ascii = "v";
+    16'h2B: ascii = "f";
+    16'h2C: ascii = "t";
+    16'h2D: ascii = "r";
+    16'h2E: ascii = "5";
+    16'h32: ascii = "b";
+    16'h31: ascii = "n";
+    16'h33: ascii = "h";
+    16'h34: ascii = "g";
+    16'h35: ascii = "y";
+    16'h36: ascii = "6";
+    16'h3A: ascii = "m";
+    16'h3B: ascii = "j";
+    16'h3C: ascii = "u";
+    16'h3D: ascii = "7";
+    16'h3E: ascii = "8";
+    16'h41: ascii = ",";
+    16'h42: ascii = "k";
+    16'h43: ascii = "i";
+    16'h44: ascii = "o";
+    16'h45: ascii = "0";
+    16'h46: ascii = "9";
+    16'h49: ascii = ".";
+    16'h4A: ascii = "/";
+    16'h4B: ascii = "l";
+    16'h4C: ascii = ";";
+    16'h4D: ascii = "p";
+    16'h4E: ascii = "-";
+    16'h52: ascii = "'";
+    16'h54: ascii = "[";
+    16'h55: ascii = "=";
+    16'h5B: ascii = "]";
+    16'h5D: ascii = "\\";   // Region-dependent
+    16'h61: ascii = "#";    // Region-dependent
+    default: ascii = 8'h00; // No key press
+  endcase
+endfunction
 
 endmodule

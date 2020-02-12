@@ -1,11 +1,11 @@
 module ps2_receiver (
   input clk,
   inout ps2_clk, ps2_data,
-  input tx,
+  input write,
   input [7:0] tx_data,
-  output reg [7:0] out,
-  output ready,
-  output [3:0] out_state,
+  output reg read,
+  output reg [7:0] rx_data,
+  output busy,
 );
 
 localparam [0:255] PARITY = {
@@ -61,8 +61,7 @@ localparam [3:0] idle                       = 4'd0,
                  tx_no_ack                  = 4'd13;
 
 reg [3:0] state = idle;
-assign ready = state == idle;
-assign out_state = state;
+assign busy = state != idle;
 
 reg [3:0] rx_count = 0, tx_count = 0;
 reg [10:0] frame;
@@ -139,14 +138,14 @@ always @(posedge clk) begin
 
   case (state)
     idle: begin
+      read <= 0;
       rx_count <= 0;
       tx_count <= 0;
 
       // If the device pulls the clock line low, start receiving.
       if (ps2_clk_low) begin
         state <= rx_down_edge;
-      end else if (tx) begin
-        out <= 0;
+      end else if (write) begin
         frame <= { 1'b0, 1'b1, PARITY[tx_data], tx_data }; // 0 = padding
         state <= tx_force_clk_low;
       end
@@ -155,7 +154,8 @@ always @(posedge clk) begin
     rx_clk_high: begin
       if (rx_count == BITS_PER_FRAME) begin
         // TODO: check parity and go back to idle if an error has occurred.
-        out <= frame[8:1];
+        rx_data <= frame[8:1];
+        read <= 1;
         state <= idle;
       end else if (ps2_clk_low) begin
         state <= rx_down_edge;
@@ -247,6 +247,7 @@ always @(posedge clk) begin
     end
 
     tx_got_ack, tx_no_ack: begin
+      // TODO: signal an error if tx_no_ack
       if (ps2_clk_high) begin
         state <= idle;
       end
