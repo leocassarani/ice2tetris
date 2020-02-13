@@ -6,6 +6,12 @@ module Keyboard (
   output [7:0] key_press,
 );
 
+localparam [7:0] SELF_TEST  = 8'hAA,
+                 EXTENDED   = 8'hE0,
+                 KEY_UP     = 8'hF0,
+                 CMD_ENABLE = 8'hF4,
+                 ACK        = 8'hFA;
+
 reg ps2_write = 0;
 reg [7:0] tx_data;
 
@@ -17,14 +23,11 @@ wire [7:0] rx_data;
 
 localparam [1:0] idle = 2'd0,
                  wait_for_ack = 2'd1,
-                 wait_for_key_up = 2'd2,
-                 wait_for_extended_scan_code = 2'd3;
+                 wait_for_extended_key_up = 2'd2;
 
 reg [1:0] state = idle;
 
-reg [15:0] scan_code;
-reg [15:0] key_down;
-
+reg [15:0] scan_code, key_down;
 assign key_press = ascii(key_down);
 
 ps2_receiver ps2 (
@@ -45,54 +48,54 @@ always @(posedge clk) begin
 
   case (state)
     idle: begin
-      if (scan_code[15:8] == 8'hE0) begin
-        key_down <= scan_code;
-      end else begin
-        case (scan_code[7:0])
-          8'hAA: begin
-            if (!ps2_busy) begin
-              tx_data <= 8'hF4;
-              ps2_write <= 1;
-              state <= wait_for_ack;
-            end
-          end
+      casez (scan_code)
+        { EXTENDED, KEY_UP }: begin
+          state <= wait_for_extended_key_up;
+        end
 
-          8'hF0: begin
-            // Could we get away without a state here?
-            // Can we just look at the `scan_code` history?
-            state <= wait_for_key_up;
-          end
+        { EXTENDED, 8'h?? }: begin
+          key_down <= scan_code;
+        end
 
-          default: begin
-            key_down <= scan_code[7:0];
+        { KEY_UP, 8'h?? }: begin
+          if (scan_code[7:0] == key_down[7:0]) begin
+            key_down <= 0;
           end
-        endcase
-      end
+        end
+
+        { 8'h??, SELF_TEST }: begin
+          if (!ps2_busy) begin
+            tx_data <= CMD_ENABLE;
+            ps2_write <= 1;
+            state <= wait_for_ack;
+          end
+        end
+
+        { 8'h??, EXTENDED }, { 8'h??, KEY_UP }: begin
+          // Do nothing, wait for the next byte.
+        end
+
+        default: begin
+          key_down <= scan_code[7:0];
+        end
+      endcase
     end
 
     wait_for_ack: begin
       ps2_write <= 0;
 
-      if (scan_code == 8'hFA) begin
+      if (scan_code[7:0] == ACK) begin
         state <= idle;
       end
     end
 
-    wait_for_key_up: begin
-      if (scan_code == key_down) begin
-        key_down <= 0;
-      end
-
-      if (scan_code != 8'hF0) begin
-        scan_code <= 0;
+    wait_for_extended_key_up: begin
+      if (scan_code[15:8] == KEY_UP) begin
         state <= idle;
-      end
-    end
 
-    wait_for_extended_scan_code: begin
-      if (scan_code != 8'hE0) begin
-        key_down[7:0] <= scan_code;
-        state <= idle;
+        if (key_down == { EXTENDED, scan_code[7:0] }) begin
+          key_down <= 0;
+        end
       end
     end
   endcase
@@ -100,6 +103,16 @@ end
 
 function [7:0] ascii(input [15:0] key);
   case (key)
+    16'h01: ascii = 8'd149; // F9
+    16'h03: ascii = 8'd145; // F5
+    16'h04: ascii = 8'd143; // F3
+    16'h05: ascii = 8'd141; // F1
+    16'h06: ascii = 8'd142; // F2
+    16'h07: ascii = 8'd152; // F12
+    16'h09: ascii = 8'd150; // F10
+    16'h0A: ascii = 8'd148; // F8
+    16'h0B: ascii = 8'd146; // F6
+    16'h0C: ascii = 8'd144; // F4
     16'h0E: ascii = "`";
     16'h1A: ascii = "z";
     16'h15: ascii = "q";
@@ -146,15 +159,25 @@ function [7:0] ascii(input [15:0] key);
     16'h52: ascii = "'";
     16'h54: ascii = "[";
     16'h55: ascii = "=";
+    16'h5A: ascii = 8'd128; // Newline
     16'h5B: ascii = "]";
     16'h5D: ascii = "\\";   // Region-dependent
     16'h61: ascii = "#";    // Region-dependent
+    16'h66: ascii = 8'd129; // Backspace
     16'h76: ascii = 8'd140; // Escape
+    16'h78: ascii = 8'd151; // F11
+    16'h83: ascii = 8'd147; // F7
 
+    16'hE069: ascii = 8'd135; // End
     16'hE06B: ascii = 8'd130; // Left arrow
+    16'hE06C: ascii = 8'd134; // Home
+    16'hE070: ascii = 8'd138; // Insert
+    16'hE071: ascii = 8'd139; // Delete
     16'hE072: ascii = 8'd133; // Down arrow
     16'hE074: ascii = 8'd132; // Right arrow
     16'hE075: ascii = 8'd131; // Up arrow
+    16'hE07A: ascii = 8'd137; // Page down
+    16'hE07D: ascii = 8'd136; // Page up
 
     default: ascii = 8'h00; // No key press
   endcase
