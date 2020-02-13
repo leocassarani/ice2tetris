@@ -17,11 +17,12 @@ wire [7:0] rx_data;
 
 localparam [1:0] idle = 2'd0,
                  wait_for_ack = 2'd1,
-                 wait_for_key_up = 2'd2;
+                 wait_for_key_up = 2'd2,
+                 wait_for_extended_scan_code = 2'd3;
 
 reg [1:0] state = idle;
 
-reg [7:0] scan_code;
+reg [15:0] scan_code;
 reg [15:0] key_down;
 
 assign key_press = ascii(key_down);
@@ -39,28 +40,34 @@ ps2_receiver ps2 (
 
 always @(posedge clk) begin
   if (ps2_read) begin
-    scan_code <= rx_data;
+    scan_code <= { scan_code[7:0], rx_data } ;
   end
 
   case (state)
     idle: begin
-      case (scan_code)
-        8'hAA: begin
-          if (!ps2_busy) begin
-            tx_data <= 8'hF4;
-            ps2_write <= 1;
-            state <= wait_for_ack;
+      if (scan_code[15:8] == 8'hE0) begin
+        key_down <= scan_code;
+      end else begin
+        case (scan_code[7:0])
+          8'hAA: begin
+            if (!ps2_busy) begin
+              tx_data <= 8'hF4;
+              ps2_write <= 1;
+              state <= wait_for_ack;
+            end
           end
-        end
 
-        8'hF0: begin
-          state <= wait_for_key_up;
-        end
+          8'hF0: begin
+            // Could we get away without a state here?
+            // Can we just look at the `scan_code` history?
+            state <= wait_for_key_up;
+          end
 
-        default: begin
-          key_down <= scan_code;
-        end
-      endcase
+          default: begin
+            key_down <= scan_code[7:0];
+          end
+        endcase
+      end
     end
 
     wait_for_ack: begin
@@ -78,6 +85,13 @@ always @(posedge clk) begin
 
       if (scan_code != 8'hF0) begin
         scan_code <= 0;
+        state <= idle;
+      end
+    end
+
+    wait_for_extended_scan_code: begin
+      if (scan_code != 8'hE0) begin
+        key_down[7:0] <= scan_code;
         state <= idle;
       end
     end
@@ -135,6 +149,13 @@ function [7:0] ascii(input [15:0] key);
     16'h5B: ascii = "]";
     16'h5D: ascii = "\\";   // Region-dependent
     16'h61: ascii = "#";    // Region-dependent
+    16'h76: ascii = 8'd140; // Escape
+
+    16'hE06B: ascii = 8'd130; // Left arrow
+    16'hE072: ascii = 8'd133; // Down arrow
+    16'hE074: ascii = 8'd132; // Right arrow
+    16'hE075: ascii = 8'd131; // Up arrow
+
     default: ascii = 8'h00; // No key press
   endcase
 endfunction
