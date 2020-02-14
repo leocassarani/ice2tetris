@@ -3,10 +3,12 @@ module Keyboard (
   inout ps2_clk, ps2_data,
   input btn1,
   output idle_out,
+  output reg caps_lock,
   output [7:0] key_press,
 );
 
-localparam [7:0] SELF_TEST  = 8'hAA,
+localparam [7:0] CAPS_LOCK  = 8'h58,
+                 SELF_TEST  = 8'hAA,
                  EXTENDED   = 8'hE0,
                  KEY_UP     = 8'hF0,
                  CMD_ENABLE = 8'hF4,
@@ -28,7 +30,7 @@ localparam [1:0] idle = 2'd0,
 reg [1:0] state = idle;
 
 reg [15:0] scan_code, key_down;
-assign key_press = ascii(key_down);
+assign key_press = ascii(key_down, caps_lock);
 
 ps2_receiver ps2 (
   .clk(clk),
@@ -60,6 +62,13 @@ always @(posedge clk) begin
         { KEY_UP, 8'h?? }: begin
           if (scan_code[7:0] == key_down[7:0]) begin
             key_down <= 0;
+          end
+        end
+
+        { 8'h??, CAPS_LOCK }: begin
+          if (key_down[7:0] != CAPS_LOCK) begin
+            key_down <= CAPS_LOCK;
+            caps_lock <= !caps_lock;
           end
         end
 
@@ -101,7 +110,7 @@ always @(posedge clk) begin
   endcase
 end
 
-function [7:0] ascii(input [15:0] key);
+function [7:0] ascii(input [15:0] key, input caps_lock);
   case (key)
     16'h01: ascii = 8'd149; // F9
     16'h03: ascii = 8'd145; // F5
@@ -114,47 +123,47 @@ function [7:0] ascii(input [15:0] key);
     16'h0B: ascii = 8'd146; // F6
     16'h0C: ascii = 8'd144; // F4
     16'h0E: ascii = "`";
-    16'h1A: ascii = "z";
-    16'h15: ascii = "q";
+    16'h1A: ascii = caps_lock ? "Z" : "z";
+    16'h15: ascii = caps_lock ? "Q" : "q";
     16'h16: ascii = "1";
-    16'h1B: ascii = "s";
-    16'h1C: ascii = "a";
-    16'h1D: ascii = "w";
+    16'h1B: ascii = caps_lock ? "S" : "s";
+    16'h1C: ascii = caps_lock ? "A" : "a";
+    16'h1D: ascii = caps_lock ? "W" : "w";
     16'h1E: ascii = "2";
-    16'h21: ascii = "c";
-    16'h22: ascii = "x";
-    16'h23: ascii = "d";
-    16'h24: ascii = "e";
+    16'h21: ascii = caps_lock ? "C" : "c";
+    16'h22: ascii = caps_lock ? "X" : "x";
+    16'h23: ascii = caps_lock ? "D" : "d";
+    16'h24: ascii = caps_lock ? "E" : "e";
     16'h25: ascii = "4";
     16'h26: ascii = "3";
     16'h29: ascii = " ";
-    16'h2A: ascii = "v";
-    16'h2B: ascii = "f";
-    16'h2C: ascii = "t";
-    16'h2D: ascii = "r";
+    16'h2A: ascii = caps_lock ? "V" : "v";
+    16'h2B: ascii = caps_lock ? "F" : "f";
+    16'h2C: ascii = caps_lock ? "T" : "t";
+    16'h2D: ascii = caps_lock ? "R" : "r";
     16'h2E: ascii = "5";
-    16'h32: ascii = "b";
-    16'h31: ascii = "n";
-    16'h33: ascii = "h";
-    16'h34: ascii = "g";
-    16'h35: ascii = "y";
+    16'h32: ascii = caps_lock ? "B" : "b";
+    16'h31: ascii = caps_lock ? "N" : "n";
+    16'h33: ascii = caps_lock ? "H" : "h";
+    16'h34: ascii = caps_lock ? "G" : "g";
+    16'h35: ascii = caps_lock ? "Y" : "y";
     16'h36: ascii = "6";
-    16'h3A: ascii = "m";
-    16'h3B: ascii = "j";
-    16'h3C: ascii = "u";
+    16'h3A: ascii = caps_lock ? "M" : "m";
+    16'h3B: ascii = caps_lock ? "J" : "j";
+    16'h3C: ascii = caps_lock ? "U" : "u";
     16'h3D: ascii = "7";
     16'h3E: ascii = "8";
     16'h41: ascii = ",";
-    16'h42: ascii = "k";
-    16'h43: ascii = "i";
-    16'h44: ascii = "o";
+    16'h42: ascii = caps_lock ? "K" : "k";
+    16'h43: ascii = caps_lock ? "I" : "i";
+    16'h44: ascii = caps_lock ? "O" : "o";
     16'h45: ascii = "0";
     16'h46: ascii = "9";
     16'h49: ascii = ".";
     16'h4A: ascii = "/";
-    16'h4B: ascii = "l";
+    16'h4B: ascii = caps_lock ? "L" : "l";
     16'h4C: ascii = ";";
-    16'h4D: ascii = "p";
+    16'h4D: ascii = caps_lock ? "P" : "p";
     16'h4E: ascii = "-";
     16'h52: ascii = "'";
     16'h54: ascii = "[";
