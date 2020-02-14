@@ -57,8 +57,7 @@ localparam [3:0] idle                       = 4'd0,
                  tx_clk_high                = 4'd9,
                  tx_wait_up_edge_before_ack = 4'd10,
                  tx_wait_ack                = 4'd11,
-                 tx_got_ack                 = 4'd12,
-                 tx_no_ack                  = 4'd13;
+                 tx_got_ack                 = 4'd12;
 
 reg [3:0] state = idle;
 assign busy = state != idle;
@@ -146,16 +145,21 @@ always @(posedge clk) begin
       if (ps2_clk_low) begin
         state <= rx_down_edge;
       end else if (write) begin
-        frame <= { 1'b0, 1'b1, PARITY[tx_data], tx_data }; // 0 = padding
+        // { STOP, PARITY, D7...D0 } (START bit has already been sent)
+        frame <= { 1'b1, PARITY[tx_data], tx_data };
         state <= tx_force_clk_low;
       end
     end
 
     rx_clk_high: begin
       if (rx_count == BITS_PER_FRAME) begin
-        // TODO: check parity and go back to idle if an error has occurred.
-        rx_data <= frame[8:1];
-        read <= 1;
+        // If the parity is incorrect, we still want to go back to the idle
+        // state, but we won't output the message from the keyboard.
+        if (frame[9] == PARITY[frame[8:1]]) begin
+          rx_data <= frame[8:1];
+          read <= 1;
+        end
+
         state <= idle;
       end else if (ps2_clk_low) begin
         state <= rx_down_edge;
@@ -242,12 +246,14 @@ always @(posedge clk) begin
 
     tx_wait_ack: begin
       if (ps2_clk_low) begin
-        state <= ps2_data_rx ? tx_got_ack : tx_no_ack;
+        // If ps2_data_rx is high, then we got an ack, otherwise we didn't.
+        // However, retrying a transmission has not been implemented, so
+        // we go back to the ack state either way.
+        state <= tx_got_ack;
       end
     end
 
-    tx_got_ack, tx_no_ack: begin
-      // TODO: signal an error if tx_no_ack
+    tx_got_ack: begin
       if (ps2_clk_high) begin
         state <= idle;
       end
