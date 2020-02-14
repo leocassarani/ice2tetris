@@ -7,15 +7,17 @@ module Keyboard (
   output [7:0] key_press,
 );
 
-localparam [7:0] CAPS_LOCK  = 8'h58,
-                 SELF_TEST  = 8'hAA,
-                 EXTENDED   = 8'hE0,
-                 KEY_UP     = 8'hF0,
-                 CMD_ENABLE = 8'hF4,
-                 ACK        = 8'hFA;
+localparam [7:0] CAPS_LOCK    = 8'h58,
+                 SELF_TEST    = 8'hAA,
+                 CMD_SET_LEDS = 8'hED,
+                 EXTENDED     = 8'hE0,
+                 KEY_UP       = 8'hF0,
+                 CMD_ENABLE   = 8'hF4,
+                 ACK          = 8'hFA;
 
 reg ps2_write = 0;
 reg [7:0] tx_data;
+reg [7:0] cmd_params;
 
 wire ps2_busy;
 assign idle_out = !ps2_busy;
@@ -23,11 +25,13 @@ assign idle_out = !ps2_busy;
 wire ps2_read;
 wire [7:0] rx_data;
 
-localparam [1:0] idle = 2'd0,
-                 wait_for_ack = 2'd1,
-                 wait_for_extended_key_up = 2'd2;
+localparam [2:0] idle = 3'd0,
+                 wait_for_ack = 3'd1,
+                 wait_for_extended_key_up = 3'd2,
+                 send_cmd_with_params = 3'd3,
+                 send_params = 3'd4;
 
-reg [1:0] state = idle;
+reg [2:0] state = idle, next_state;
 
 reg [15:0] scan_code, key_down;
 assign key_press = ascii(key_down, caps_lock);
@@ -44,6 +48,8 @@ ps2_receiver ps2 (
 );
 
 always @(posedge clk) begin
+  ps2_write <= 0;
+
   if (ps2_read) begin
     scan_code <= { scan_code[7:0], rx_data } ;
   end
@@ -69,6 +75,11 @@ always @(posedge clk) begin
           if (key_down[7:0] != CAPS_LOCK) begin
             key_down <= CAPS_LOCK;
             caps_lock <= !caps_lock;
+
+            tx_data <= CMD_SET_LEDS;
+            cmd_params <= { !caps_lock, 2'b00 };
+
+            state <= send_cmd_with_params;
           end
         end
 
@@ -76,11 +87,13 @@ always @(posedge clk) begin
           if (!ps2_busy) begin
             tx_data <= CMD_ENABLE;
             ps2_write <= 1;
+
+            next_state <= idle;
             state <= wait_for_ack;
           end
         end
 
-        { 8'h??, EXTENDED }, { 8'h??, KEY_UP }: begin
+        { 8'h??, EXTENDED }, { 8'h??, KEY_UP }, { 8'h??, ACK }: begin
           // Do nothing, wait for the next byte.
         end
 
@@ -91,10 +104,8 @@ always @(posedge clk) begin
     end
 
     wait_for_ack: begin
-      ps2_write <= 0;
-
       if (scan_code[7:0] == ACK) begin
-        state <= idle;
+        state <= next_state;
       end
     end
 
@@ -105,6 +116,22 @@ always @(posedge clk) begin
         if (key_down == { EXTENDED, scan_code[7:0] }) begin
           key_down <= 0;
         end
+      end
+    end
+
+    send_cmd_with_params: begin
+      if (!ps2_busy) begin
+        ps2_write <= 1;
+        next_state <= send_params;
+        state <= wait_for_ack;
+      end
+    end
+
+    send_params: begin
+      if (!ps2_busy) begin
+        tx_data <= cmd_params;
+        ps2_write <= 1;
+        state <= idle;
       end
     end
   endcase
@@ -122,6 +149,7 @@ function [7:0] ascii(input [15:0] key, input caps_lock);
     16'h0A: ascii = 8'd148; // F8
     16'h0B: ascii = 8'd146; // F6
     16'h0C: ascii = 8'd144; // F4
+    16'h0D: ascii = "\t";
     16'h0E: ascii = "`";
     16'h1A: ascii = caps_lock ? "Z" : "z";
     16'h15: ascii = caps_lock ? "Q" : "q";
