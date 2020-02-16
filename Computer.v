@@ -29,24 +29,15 @@ wire vram_ready;
 
 assign LEDR_N = !vram_ready;
 
-// reg [1279:0] line;
-
-// wire [10:0] index = 1279 - (8 * (h_line[9:2] + 1));
-
-wire [3:0] index = 15 - (8 * h_line[2]);
-wire [7:0] pixel = display ? vram_out[index:(index - 7)] : 8'b0;
-
-//assign red = display ? channel(2'b11) : 4'b0;
-//assign green = display ? channel(2'b10) : 4'b0;
-//assign blue = display ? channel(2'b00) : 4'b0;
+reg [1279:0] line;
+wire [10:0] index = 1279 - (8 * h_line[9:2]);
+wire [7:0] pixel = display ? line[index:(index - 7)] : 8'b0;
 
 assign red = channel(pixel[5:4]);
 assign green = channel(pixel[3:2]);
 assign blue = channel(pixel[1:0]);
 
-// reg [13:0] address = 0;
-
-wire [13:0] address = display ? (80 * v_line[9:2]) + h_line[9:3] : 14'b0;
+reg [13:0] address = 0;
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -87,29 +78,22 @@ always @(posedge clk_out) begin
       h_line <= h_line + 1;
     end
 
-    //if (fetch) begin
-      //if (v_line >= 480) begin
-        //address <= h_line - 640;
-      //end else begin
-        //address <= (80 * (v_line[9:2] + 1)) + (h_line - 640);
-      //end
+    if (fetch) begin
+      if (v_line >= 480) begin
+        address <= h_line - 640;
+      end else begin
+        address <= (80 * (v_line[9:2] + 1)) + (h_line - 640);
+      end
 
-      // line[1279 - (16 * (h_line - 640)):1279 - (16 * (h_line - 640) + 16)] <= vram_out;
-
-      //if (h_line > 640) begin
-        //line <= { line[1263:0], vram_out };
-      //end
-    //end
+      if (h_line > 640) begin
+        line <= { line[1263:0], vram_out };
+      end
+    end
   end
 end
 
 function [4:0] channel(input [2:0] color);
-  case (color)
-    2'b00: channel = 4'b0000;
-    2'b01: channel = 4'b0101;
-    2'b10: channel = 4'b1010;
-    2'b11: channel = 4'b1111;
-  endcase
+  channel = { color[1], color[0], color[1], color[0] };
 endfunction
 
 endmodule
