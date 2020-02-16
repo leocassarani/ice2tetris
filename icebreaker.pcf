@@ -1,6 +1,16 @@
 # 12 MHz clock
 set_io CLK        35
 
+# LEDs
+set_io LEDR_N     11
+set_io LEDG_N     37
+
+# SPI Flash
+set_io FLASH_SCK  15
+set_io FLASH_SSB  16
+set_io FLASH_IO0  14
+set_io FLASH_IO1  17
+
 # PMOD 1A
 set_io P1A1        4
 set_io P1A2        2
@@ -20,3 +30,8 @@ set_io P1B7       42
 set_io P1B8       36
 set_io P1B9       32
 set_io P1B10      28
+
+# Buttons (PMOD 2)
+set_io BTN1       20
+set_io BTN2       19
+set_io BTN3       18

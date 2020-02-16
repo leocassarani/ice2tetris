@@ -1,7 +1,11 @@
 module Computer (
   input CLK,
+  input FLASH_IO1,
+  input BTN1,
+  output LEDR_N, LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8,
+  output FLASH_SCK, FLASH_SSB, FLASH_IO0,
 );
 
 wire clk_out;
@@ -16,15 +20,19 @@ wire [3:0] red = { P1A4, P1A3, P1A2, P1A1 };
 wire [3:0] blue = { P1A10, P1A9, P1A8, P1A7 };
 wire [3:0] green = { P1B4, P1B3, P1B2, P1B1 };
 
-wire box = h_line >= 64 && h_line < 576 && v_line >= 112 && v_line < 368;
-wire [3:0] fill = { box, box, box, box };
-
-assign red = fill;
-assign blue = fill;
-assign green = fill;
-
 assign P1B7 = h_sync;
 assign P1B8 = v_sync;
+
+wire rom_ready;
+wire [15:0] rom_out;
+
+assign LEDR_N = !rom_ready;
+
+assign red = display ? { rom_out[7], rom_out[7], rom_out[6], rom_out[6] } : 4'b0000;
+assign green = display ? { rom_out[5], rom_out[5], rom_out[4], rom_out[4] } : 4'b0000;
+assign blue = display ? { rom_out[3], rom_out[3], rom_out[2], rom_out[2] } : 4'b0000;
+
+reg [13:0] address = 14'b0;
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -38,6 +46,25 @@ SB_PLL40_PAD #(
   .PACKAGEPIN(CLK),
   .PLLOUTCORE(clk_out),
 );
+
+ROM rom (
+  .clk(clk_out),
+  .address(address),
+  .ready(rom_ready),
+  .out(rom_out),
+  .led(LEDG_N),
+
+  .spi_cs(FLASH_SSB),
+  .spi_sclk(FLASH_SCK),
+  .spi_mosi(FLASH_IO0),
+  .spi_miso(FLASH_IO1),
+);
+
+always @(posedge BTN1) begin
+  if (rom_ready) begin
+    address <= address + 8'hFF;
+  end
+end
 
 always @(posedge clk_out) begin
   if (h_line == 799) begin
