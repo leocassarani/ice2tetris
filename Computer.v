@@ -15,7 +15,7 @@ reg [9:0] h_line, v_line;
 wire display = h_line < 640 && v_line < 480;
 wire h_sync = h_line < 656 || h_line >= 752;
 wire v_sync = v_line < 490 || v_line >= 492;
-wire fetch = h_line >= 640 && h_line < 720;
+wire fetch = h_line >= 640 && h_line <= 722;
 
 wire [3:0] red = { P1A4, P1A3, P1A2, P1A1 };
 wire [3:0] blue = { P1A10, P1A9, P1A8, P1A7 };
