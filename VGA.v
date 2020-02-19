@@ -13,27 +13,27 @@ module VGA (
 
 reg [9:0] h_count = 0, v_count = 0;
 
-wire h_sync_pulse = h_count >= 656 && h_count < 752;
-wire h_display = h_count < 640;
+wire h_sync_pulse = h_count >= 16 && h_count < 112;
+wire h_back_porch = h_count >= 112 && h_count < 160;
+wire h_display = h_count >= 160 && h_count < 800;
 wire h_end = h_count == 799;
 
-wire v_sync_pulse = v_count >= 490 && v_count < 492;
-wire v_display = v_count < 480;
+wire v_sync_pulse = v_count >= 10 && v_count < 12;
+wire v_back_porch = v_count >= 12 && v_count < 45;
+wire v_display = v_count >= 45 && v_count < 525;
 wire v_end = h_count == 524;
 
-wire [9:0] x = h_display ? h_count : 0; // range: 0-639
-wire [8:0] y = v_display ? v_count : 0;       // range: 0-479
-
-wire display = h_display && v_display;
+wire [9:0] x = h_display ? h_count - 160 : 0; // range: 0-639
+wire [8:0] y = v_display ? v_count - 45 : 0;  // range: 0-479
 
 reg [15:0] pixel_word = 0;
-// wire [7:0] pixel = x[2] ? pixel_word[7:0] : pixel_word[15:0];
+wire [7:0] pixel = x[2] ? pixel_word[7:0] : pixel_word[15:0];
 
 // In 640x480 @ 60Hz, both H- and V- sync signals have negative polarity.
 assign h_sync = !h_sync_pulse;
 assign v_sync = !v_sync_pulse;
 
-wire [7:0] pixel = 8'b00110000;
+wire display = h_display && v_display;
 
 assign red = display ? channel(pixel[5:4]) : 0;
 assign green = display ? channel(pixel[3:2]) : 0;
