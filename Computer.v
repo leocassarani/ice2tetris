@@ -15,7 +15,6 @@ reg [9:0] h_line, v_line;
 wire display = h_line < 640 && v_line < 480;
 wire h_sync = h_line < 656 || h_line >= 752;
 wire v_sync = v_line < 490 || v_line >= 492;
-wire fetch = h_line >= 640 && h_line <= 722;
 
 wire [3:0] red = { P1A4, P1A3, P1A2, P1A1 };
 wire [3:0] blue = { P1A10, P1A9, P1A8, P1A7 };
@@ -29,15 +28,17 @@ wire vram_ready;
 
 assign LEDR_N = !vram_ready;
 
-reg [1279:0] line;
-wire [10:0] index = 1279 - (8 * h_line[9:2]);
-wire [7:0] pixel = display ? line[index:(index - 7)] : 8'b0;
+wire [7:0] pixel = h_line[2] ? scanline_rdata[15:8] : scanline_rdata[7:0];
 
 assign red = channel(pixel[5:4]);
 assign green = channel(pixel[3:2]);
 assign blue = channel(pixel[1:0]);
 
-reg [13:0] address = 0;
+reg [13:0] vram_addr = 0;
+reg [10:0] scanline_raddr = 0;
+reg [10:0] scanline_waddr = 0;
+reg [15:0] scanline_wdata;
+reg [15:0] scanline_rdata;
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -54,7 +55,7 @@ SB_PLL40_PAD #(
 
 VRAM vram (
   .clk(clk_out),
-  .raddr(address),
+  .raddr(vram_addr),
   .out(vram_out),
   .loaded(vram_ready),
 
@@ -63,6 +64,38 @@ VRAM vram (
   .spi_mosi(FLASH_IO0),
   .spi_miso(FLASH_IO1),
 );
+
+SB_RAM40_4K #(
+  .WRITE_MODE(0),
+  .READ_MODE(0),
+) scanline_ram (
+  .RCLK(clk_out),
+  .RCLKE(1'b1),
+  .RE(display),
+  .RADDR(scanline_raddr),
+  .RDATA(scanline_rdata),
+  .WCLK(clk_out),
+  .WCLKE(1'b1),
+  .WE(!display),
+  .WADDR(scanline_waddr),
+  .WDATA(scanline_wdata),
+);
+
+wire [7:0] vram_idx = h_line < 640 ? 0 : h_line - 640;
+wire [7:0] scanline_idx = vram_idx ? vram_idx - 2 : 0;
+wire [13:0] vram_page = v_line < 480 ? 2 + (80 * v_line[9:3]) : 0;
+
+wire [9:0] next_hline = h_line + 2;
+
+always @(posedge clk_out) begin
+  if (vram_ready) begin
+    vram_addr <= vram_page + vram_idx;
+    scanline_waddr <= scanline_idx;
+    scanline_wdata <= vram_out;
+  end
+
+  scanline_raddr <= next_hline[9:3];
+end
 
 always @(posedge clk_out) begin
   if (vram_ready) begin
@@ -76,18 +109,6 @@ always @(posedge clk_out) begin
       end
     end else begin
       h_line <= h_line + 1;
-    end
-
-    if (fetch) begin
-      if (v_line >= 480) begin
-        address <= h_line - 640;
-      end else begin
-        address <= (80 * (v_line[9:2] + 1)) + (h_line - 640);
-      end
-
-      if (h_line > 640) begin
-        line <= { line[1263:0], vram_out };
-      end
     end
   end
 end
