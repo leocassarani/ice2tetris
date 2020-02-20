@@ -5,7 +5,7 @@ module VGA (
   input clken,
 
   input [15:0] vram_rdata,
-  output [13:0] vram_raddr,
+  output reg [13:0] vram_raddr = 2,
 
   output h_sync, v_sync,
   output [3:0] red, green, blue,
@@ -22,7 +22,7 @@ wire v_display = v_count < 480;
 wire v_end = v_count == 524;
 
 wire [9:0] x = h_display ? h_count : 0; // range: 0-639
-wire [8:0] y = v_display ? v_count : 0;  // range: 0-479
+wire [9:0] y = v_display ? v_count : 0; // range: 0-479
 
 reg [15:0] pixel_word = 0;
 wire [7:0] pixel = x[2] ? pixel_word[7:0] : pixel_word[15:8];
@@ -37,15 +37,26 @@ assign red = display ? channel(pixel[5:4]) : 0;
 assign green = display ? channel(pixel[3:2]) : 0;
 assign blue = display ? channel(pixel[1:0]) : 0;
 
-assign vram_raddr = display ? 1 + (80 * y[8:3] + x[9:3]) : 0;
+// assign vram_raddr = display ? 1 + (80 * y[9:3] + x[9:3]) : 0;
+// reg [6:0] vram_offset = 0;
+// wire [13:0] vram_line = 10 * { y[9:3], 3'b000 };
+// assign vram_raddr = vram_line + vram_offset;
+
+always @(posedge clk) begin
+  // We want a new "pixel word" (2 pixels) every 8 clock cycles.
+  if (x[2:0] == 3'b000) begin
+    pixel_word <= vram_rdata;
+  end else if (x[2:0] == 3'b100) begin
+    vram_raddr[0] <= x[3];
+  end
+
+  if (h_end) begin
+    vram_raddr <= 2;
+  end
+end
 
 always @(posedge clk) begin
   if (clken) begin
-    // We want a new "pixel word" (2 pixels) every 8 clock cycles.
-    if (x[2:0] == 3'b000) begin
-      pixel_word <= vram_rdata;
-    end
-
     if (h_end && v_end) begin
       h_count <= 0;
       v_count <= 0;
