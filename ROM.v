@@ -2,7 +2,7 @@ module ROM (
   input clk,
   input [15:0] address,
   output ready,
-  output reg [15:0] out,
+  output [15:0] out,
 
   output spi_cs, output spi_sclk, output spi_mosi,
   input spi_miso,
@@ -14,18 +14,16 @@ wire [15:0] flash_data;
 wire [23:0] flash_addr = 24'h100000 + { address, 1'b0 }; // 1024KB + (addr << 1);
 
 always @(posedge clk) begin
-  reset <= 0;
-end
-
-always @(posedge ready) begin
-  out <= flash_data;
+  if (reset > 0) begin
+    reset <= reset - 1;
+  end
 end
 
 spi_flash_mem flash (
   .clk(clk),
   .reset(reset),
   .address(flash_addr),
-  .rdata(flash_data),
+  .rdata(out),
   .ready(ready),
 
   .spi_cs(spi_cs),
@@ -40,7 +38,7 @@ module spi_flash_mem (
   input clk, reset,
   input [23:0] address,
 
-  output reg ready,
+  output reg ready = 0,
   output reg [15:0] rdata,
 
   output reg spi_cs, spi_sclk, spi_mosi,
@@ -68,7 +66,7 @@ always @(posedge clk) begin
         spi_mosi <= buffer[7];
       end else begin
         spi_sclk <= 1;
-        buffer <= {buffer, spi_miso};
+        buffer <= { buffer, spi_miso };
         xfer_cnt <= xfer_cnt - 1;
       end
     end else begin

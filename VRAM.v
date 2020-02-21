@@ -15,7 +15,8 @@ assign loaded = !loading;
 
 wire rom_ready;
 wire [15:0] rom_out;
-reg [15:0] rom_data;
+
+reg [1:0] ram_ready = 2;
 
 ROM rom (
   .clk(clk),
@@ -33,9 +34,9 @@ SB_SPRAM256KA spram (
   .CLOCK(clk),
   .CHIPSELECT(1'b1),
   .ADDRESS(loading ? waddr[13:0] : raddr),
-  .WREN(loading),
+  .WREN(loading && rom_ready),
   .MASKWREN(4'b1111),
-  .DATAIN(loading ? rom_data[15:0] : 16'b0),
+  .DATAIN(loading ? rom_out : 16'b0),
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
@@ -44,8 +45,11 @@ SB_SPRAM256KA spram (
 
 always @(posedge clk) begin
   if (loading && rom_ready) begin
-    rom_data <= rom_out;
-    waddr <= waddr + 1;
+    if (ram_ready > 0) begin
+      ram_ready <= ram_ready - 1;
+    end else begin
+      waddr <= waddr + 1;
+    end
   end
 end
 

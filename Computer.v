@@ -6,7 +6,7 @@ module Computer (
   input BTN1,
   output LEDR_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
-  output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8,
+  output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8, P1B9, P1B10,
   output FLASH_SCK, FLASH_SSB, FLASH_IO0,
 );
 
@@ -15,8 +15,8 @@ wire clk_out;
 wire vram_ready;
 assign LEDR_N = !vram_ready;
 
-wire [15:0] vram_out;
-wire [13:0] vram_raddr;
+reg [13:0] vram_raddr = 0;
+wire [15:0] vram_rdata;
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -34,7 +34,7 @@ SB_PLL40_PAD #(
 VRAM vram (
   .clk(clk_out),
   .raddr(vram_raddr),
-  .out(vram_out),
+  .out(vram_rdata),
   .loaded(vram_ready),
 
   .spi_cs(FLASH_SSB),
@@ -43,19 +43,20 @@ VRAM vram (
   .spi_miso(FLASH_IO1),
 );
 
-VGA vga (
+seven_seg_ctrl seven_segment_top (
   .clk(clk_out),
-  .clken(vram_ready),
-
-  .vram_rdata(vram_out),
-  .vram_raddr(vram_raddr),
-
-  .h_sync(P1B7),
-  .v_sync(P1B8),
-
-  .red({ P1A4, P1A3, P1A2, P1A1 }),
-  .blue({ P1A10, P1A9, P1A8, P1A7 }),
-  .green({ P1B4, P1B3, P1B2, P1B1 }),
+  .din(vram_rdata[15:8]),
+  .dout({ P1A10, P1A9, P1A8, P1A7, P1A4, P1A3, P1A2, P1A1 }),
 );
+
+seven_seg_ctrl seven_segment_bottom (
+  .clk(clk_out),
+  .din(vram_raddr[7:0]),
+  .dout({ P1B10, P1B9, P1B8, P1B7, P1B4, P1B3, P1B2, P1B1 }),
+);
+
+always @(posedge BTN1) begin
+  vram_raddr <= vram_raddr + 1;
+end
 
 endmodule
