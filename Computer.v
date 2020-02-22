@@ -10,7 +10,9 @@ module Computer (
   output FLASH_SCK, FLASH_SSB, FLASH_IO0,
 );
 
-wire clk_out;
+wire clk_out, pll_out, pll_locked;
+
+wire reset = !pll_locked;
 
 wire vram_ready;
 assign LEDR_N = !vram_ready;
@@ -27,12 +29,14 @@ SB_PLL40_PAD #(
 ) pll_clock (
   .RESETB(1'b1),
   .BYPASS(1'b0),
+  .LOCK(pll_locked),
   .PACKAGEPIN(CLK),
   .PLLOUTCORE(clk_out),
 );
 
 VRAM vram (
   .clk(clk_out),
+  .reset(reset),
   .raddr(vram_raddr),
   .out(vram_rdata),
   .loaded(vram_ready),
@@ -51,7 +55,7 @@ seven_seg_ctrl seven_segment_top (
 
 seven_seg_ctrl seven_segment_bottom (
   .clk(clk_out),
-  .din(vram_raddr[7:0]),
+  .din(vram_rdata[7:0]),
   .dout({ P1B10, P1B9, P1B8, P1B7, P1B4, P1B3, P1B2, P1B1 }),
 );
 

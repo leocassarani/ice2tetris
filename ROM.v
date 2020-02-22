@@ -1,5 +1,6 @@
 module ROM (
   input clk,
+  input reset,
   input [15:0] address,
   output ready,
   output [15:0] out,
@@ -8,16 +9,8 @@ module ROM (
   input spi_miso,
 );
 
-reg reset = 1;
-
 wire [15:0] flash_data;
 wire [23:0] flash_addr = 24'h100000 + { address, 1'b0 }; // 1024KB + (addr << 1);
-
-always @(posedge clk) begin
-  if (reset > 0) begin
-    reset <= reset - 1;
-  end
-end
 
 spi_flash_mem flash (
   .clk(clk),

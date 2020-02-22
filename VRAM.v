@@ -1,5 +1,6 @@
 module VRAM (
   input clk,
+  input reset,
   input [13:0] raddr,
 
   output loaded,
@@ -12,14 +13,14 @@ module VRAM (
 reg [15:0] waddr = 0;
 wire loading = waddr < 16'h4000;
 assign loaded = !loading;
+wire ram_write = !reset && loading && rom_ready;
 
 wire rom_ready;
 wire [15:0] rom_out;
 
-reg [1:0] ram_ready = 2;
-
 ROM rom (
   .clk(clk),
+  .reset(reset),
   .address(waddr),
   .out(rom_out),
   .ready(rom_ready),
@@ -34,7 +35,7 @@ SB_SPRAM256KA spram (
   .CLOCK(clk),
   .CHIPSELECT(1'b1),
   .ADDRESS(loading ? waddr[13:0] : raddr),
-  .WREN(loading && rom_ready),
+  .WREN(ram_write),
   .MASKWREN(4'b1111),
   .DATAIN(loading ? rom_out : 16'b0),
   .STANDBY(1'b0),
@@ -44,12 +45,8 @@ SB_SPRAM256KA spram (
 );
 
 always @(posedge clk) begin
-  if (loading && rom_ready) begin
-    if (ram_ready > 0) begin
-      ram_ready <= ram_ready - 1;
-    end else begin
-      waddr <= waddr + 1;
-    end
+  if (ram_write) begin
+    waddr <= waddr + 1;
   end
 end
 
