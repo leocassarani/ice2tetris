@@ -11,8 +11,10 @@ module VRAM (
 );
 
 reg [15:0] waddr = 0;
+
 wire loading = waddr < 16'h4000;
 assign loaded = !loading;
+
 wire ram_write = !reset && loading && rom_ready;
 
 wire rom_ready;
