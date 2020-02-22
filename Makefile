@@ -1,5 +1,5 @@
 PROJ = Computer
-ADD_SRC = seven_segment.v ROM.v VRAM.v
+ADD_SRC = ROM.v VGA.v VRAM.v
 
 PIN_DEF = icebreaker.pcf
 DEVICE = up5k
