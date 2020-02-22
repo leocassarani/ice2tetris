@@ -5,7 +5,7 @@ module VGA (
   input clken,
 
   input [15:0] vram_rdata,
-  output reg [13:0] vram_raddr,
+  output [13:0] vram_raddr,
 
   output h_sync, v_sync,
   output [3:0] red, green, blue,
@@ -24,8 +24,7 @@ wire v_end = v_count == 524;
 wire [9:0] x = h_display ? h_count : 0; // range: 0-639
 wire [9:0] y = v_display ? v_count : 0; // range: 0-479
 
-reg [15:0] pixel_word = 0;
-wire [7:0] pixel = x[2] ? pixel_word[7:0] : pixel_word[15:8];
+reg [7:0] pixel;
 
 // In 640x480 @ 60Hz, both H- and V- sync signals have negative polarity.
 assign h_sync = !h_sync_pulse;
@@ -39,19 +38,19 @@ assign blue = display ? { pixel[1:0], pixel[1:0] } : 0;
 
 // assign vram_raddr = display ? 1 + (80 * y[9:3] + x[9:3]) : 0;
 reg [6:0] vram_offset = 0;
-wire [13:0] vram_line = 10 * { y[9:3], 3'b000 };
+wire [13:0] vram_line = 80 * y[9:2];
 assign vram_raddr = vram_line + vram_offset;
 
 always @(posedge clk) begin
-  // We want a new "pixel word" (2 pixels) every 8 clock cycles.
   if (x[2:0] == 3'b000) begin
-    pixel_word <= vram_rdata;
+    pixel <= vram_rdata[15:8];
   end else if (x[2:0] == 3'b100) begin
+    pixel <= vram_rdata[7:0];
     vram_offset <= vram_offset + 1;
   end
 
-  if (h_end) begin
-    vram_offset <= &y[2:0] ? 80 : 0;
+  if (!h_display) begin
+    vram_offset <= 0;
   end
 end
 
