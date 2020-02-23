@@ -32,25 +32,28 @@ assign v_sync = !v_sync_pulse;
 
 wire display = h_display && v_display;
 
-assign red = { pixel[5:4], pixel[5:4] };
+assign red   = { pixel[5:4], pixel[5:4] };
 assign green = { pixel[3:2], pixel[3:2] };
-assign blue = { pixel[1:0], pixel[1:0] };
+assign blue  = { pixel[1:0], pixel[1:0] };
 
 reg [6:0] vram_offset = 0;
 wire [13:0] vram_line = 80 * y[9:2];
 assign vram_raddr = vram_line + vram_offset;
 
 always @(posedge clk) begin
-  if (!display) begin
-    pixel <= 0;
-  end else if (x[2:0] == 3'b000) begin
-    pixel <= vram_rdata[15:8];
-  end else if (x[2:0] == 3'b100) begin
-    pixel <= vram_rdata[7:0];
-    vram_offset <= vram_offset + 1;
-  end
+  if (display) begin
+    case (x[2:0])
+      3'b000: begin
+        pixel <= vram_rdata[15:8];
+      end
 
-  if (!h_display) begin
+      3'b100: begin
+        pixel <= vram_rdata[7:0];
+        vram_offset <= vram_offset + 1;
+      end
+    endcase
+  end else begin
+    pixel <= 0;
     vram_offset <= 0;
   end
 end
