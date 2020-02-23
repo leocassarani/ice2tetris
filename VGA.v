@@ -11,20 +11,24 @@ module VGA (
   output [3:0] red, green, blue,
 );
 
+localparam [6:0] H_BLANK = 64;
+localparam [6:0] V_BLANK = 112;
+
 reg [9:0] h_count = 0, v_count = 0;
 
 wire h_sync_pulse = h_count >= 16 && h_count < 112;
-wire h_display = h_count >= 160 && h_count < 800;
+wire h_display = h_count >= (160 + H_BLANK) && h_count < (160 + H_BLANK + 512);
 wire h_end = h_count == 799;
 
 wire v_sync_pulse = v_count >= 490 && v_count < 492;
-wire v_display = v_count < 480;
+wire v_display = v_count >= V_BLANK && v_count < (V_BLANK + 256);
 wire v_end = v_count == 524;
 
-wire [9:0] x = h_display ? h_count - 160 : 0; // range: 0-639
-wire [9:0] y = v_display ? v_count : 0;       // range: 0-479
+wire [9:0] x = h_display ? h_count - (160 + H_BLANK) : 0; // range: 0-511
+wire [9:0] y = v_display ? v_count - V_BLANK : 0;         // range: 0-255
 
-reg [7:0] pixel;
+reg [15:0] pixel_word;
+reg pixel;
 
 // In 640x480 @ 60Hz, both H- and V- sync signals have negative polarity.
 assign h_sync = !h_sync_pulse;
@@ -32,23 +36,26 @@ assign v_sync = !v_sync_pulse;
 
 wire display = h_display && v_display;
 
-assign red   = { pixel[5:4], pixel[5:4] };
-assign green = { pixel[3:2], pixel[3:2] };
-assign blue  = { pixel[1:0], pixel[1:0] };
+assign red   = { 4{ pixel } };
+assign green = { 4{ pixel } };
+assign blue  = { 4{ pixel } };
 
 reg [6:0] vram_offset = 0;
-wire [13:0] vram_line = 80 * y[9:2];
+wire [13:0] vram_line = 32 * y;
 assign vram_raddr = vram_line + vram_offset;
 
 always @(posedge clk) begin
   if (display) begin
-    case (x[2:0])
-      3'b000: begin
-        pixel <= vram_rdata[15:8];
+    // Negate the pixel value so that 1 = black, 0 = white.
+    pixel <= ~pixel_word[x[3:0]];
+
+    case (x[3:0])
+      4'b0000: begin
+        pixel_word <= vram_rdata;
+        pixel <= ~vram_rdata[0];
       end
 
-      3'b100: begin
-        pixel <= vram_rdata[7:0];
+      4'b1000: begin
         vram_offset <= vram_offset + 1;
       end
     endcase
