@@ -17,6 +17,7 @@ assign LEDR_N = !vram_ready;
 
 wire [13:0] vram_raddr;
 wire [15:0] vram_rdata;
+wire vram_rden;
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -36,6 +37,7 @@ VRAM vram (
   .clk(pll_out),
   .reset(reset),
   .raddr(vram_raddr),
+  .rden(vram_rden),
   .out(vram_rdata),
   .loaded(vram_ready),
 
@@ -45,12 +47,27 @@ VRAM vram (
   .spi_miso(FLASH_IO1),
 );
 
+//shared_vram svram (
+  //.clk(pll_out),
+
+  //.rden(vram_rden),
+  //.raddr(vram_raddr),
+  //.rdata(vram_rdata),
+
+  //.wren(vram_wren),
+  //.waddr(vram_waddr),
+  //.wdata(vram_wdata),
+
+  //.wrack(vram_wrack),
+//);
+
 VGA vga (
   .clk(pll_out),
   .clken(vram_ready),
 
   .vram_rdata(vram_rdata),
   .vram_raddr(vram_raddr),
+  .vram_rden(vram_rden),
 
   .h_sync(P1B7),
   .v_sync(P1B8),
@@ -59,5 +76,21 @@ VGA vga (
   .blue({ P1A10, P1A9, P1A8, P1A7 }),
   .green({ P1B4, P1B3, P1B2, P1B1 }),
 );
+
+//reg written = 0;
+
+//always @(posedge pll_out) begin
+  //if (!written) begin
+    //if (vram_wrack) begin
+      //vram_wren <= 0;
+      //written <= 1;
+    //end else begin
+      //vram_wren <= BTN1;
+      //vram_wrdata <= BTN3 ? 16'hffff : 16'b0;
+    //end
+  //end else if (!BTN1) begin
+    //written <= 0;
+  //end
+//end
 
 endmodule

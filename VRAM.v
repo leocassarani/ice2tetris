@@ -1,6 +1,7 @@
 module VRAM (
   input clk,
   input reset,
+  input rden,
   input [13:0] raddr,
 
   output loaded,
@@ -19,6 +20,9 @@ wire ram_write = !reset && loading && rom_ready;
 
 wire rom_ready;
 wire [15:0] rom_out;
+
+wire [15:0] ram_out;
+assign out = rden ? ram_out : 16'h0000;
 
 ROM rom (
   .clk(clk),
@@ -43,7 +47,7 @@ SB_SPRAM256KA spram (
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
-  .DATAOUT(out),
+  .DATAOUT(ram_out),
 );
 
 always @(posedge clk) begin
