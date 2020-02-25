@@ -67,7 +67,7 @@ always @(posedge clk) begin
         vram_offset <= vram_offset + 1;
       end
 
-      4'b1111: begin
+      4'b1110: begin
         vram_rden <= 1;
       end
     endcase
@@ -75,7 +75,7 @@ always @(posedge clk) begin
     pixel <= 0;
     vram_offset <= 0;
 
-    if (h_count == H_MIN - 1) begin
+    if (h_count == H_MIN - 2) begin
       vram_rden <= 1;
     end
   end

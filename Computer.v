@@ -3,6 +3,7 @@
 module Computer (
   input CLK,
   input FLASH_IO1,
+  input BTN1, BTN2, BTN3,
   output LEDR_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8, P1B9, P1B10,
@@ -12,12 +13,17 @@ module Computer (
 wire pll_out, pll_locked;
 wire reset = !pll_locked;
 
-wire vram_ready;
-assign LEDR_N = !vram_ready;
+//wire vram_ready;
+//assign LEDR_N = !vram_ready;
 
 wire [13:0] vram_raddr;
 wire [15:0] vram_rdata;
-wire vram_rden;
+
+reg [13:0] vram_waddr;
+reg [15:0] vram_wdata;
+
+reg vram_wren;
+wire vram_rden, vram_wrack;
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -33,37 +39,37 @@ SB_PLL40_PAD #(
   .PLLOUTCORE(pll_out),
 );
 
-VRAM vram (
-  .clk(pll_out),
-  .reset(reset),
-  .raddr(vram_raddr),
-  .rden(vram_rden),
-  .out(vram_rdata),
-  .loaded(vram_ready),
-
-  .spi_cs(FLASH_SSB),
-  .spi_sclk(FLASH_SCK),
-  .spi_mosi(FLASH_IO0),
-  .spi_miso(FLASH_IO1),
-);
-
-//shared_vram svram (
+//VRAM vram (
   //.clk(pll_out),
-
-  //.rden(vram_rden),
+  //.reset(reset),
   //.raddr(vram_raddr),
-  //.rdata(vram_rdata),
+  //.rden(vram_rden),
+  //.out(vram_rdata),
+  //.loaded(vram_ready),
 
-  //.wren(vram_wren),
-  //.waddr(vram_waddr),
-  //.wdata(vram_wdata),
-
-  //.wrack(vram_wrack),
+  //.spi_cs(FLASH_SSB),
+  //.spi_sclk(FLASH_SCK),
+  //.spi_mosi(FLASH_IO0),
+  //.spi_miso(FLASH_IO1),
 //);
+
+shared_vram svram (
+  .clk(pll_out),
+
+  .rden(vram_rden),
+  .raddr(vram_raddr),
+  .rdata(vram_rdata),
+
+  .wren(vram_wren),
+  .waddr(vram_waddr),
+  .wdata(vram_wdata),
+
+  .wrack(vram_wrack),
+);
 
 VGA vga (
   .clk(pll_out),
-  .clken(vram_ready),
+  .clken(1),
 
   .vram_rdata(vram_rdata),
   .vram_raddr(vram_raddr),
@@ -77,20 +83,24 @@ VGA vga (
   .green({ P1B4, P1B3, P1B2, P1B1 }),
 );
 
-//reg written = 0;
+reg written = 0;
 
-//always @(posedge pll_out) begin
-  //if (!written) begin
-    //if (vram_wrack) begin
-      //vram_wren <= 0;
-      //written <= 1;
-    //end else begin
-      //vram_wren <= BTN1;
-      //vram_wrdata <= BTN3 ? 16'hffff : 16'b0;
-    //end
-  //end else if (!BTN1) begin
-    //written <= 0;
-  //end
-//end
+always @(posedge pll_out) begin
+  if (!written) begin
+    if (vram_wrack) begin
+      vram_wren <= 0;
+      written <= 1;
+    end else begin
+      vram_wren <= BTN1;
+      vram_wdata <= BTN3 ? 16'hffff : 16'b0;
+    end
+  end else if (!BTN1) begin
+    written <= 0;
+  end
+end
+
+always @(posedge BTN2) begin
+  vram_waddr <= vram_waddr == (14'h2000 - 1) ? 0 : vram_waddr + 1;
+end
 
 endmodule
