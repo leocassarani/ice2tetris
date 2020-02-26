@@ -19,7 +19,7 @@ wire reset = !pll_locked;
 wire [13:0] vram_raddr;
 wire [15:0] vram_rdata;
 
-reg [13:0] vram_waddr;
+reg [13:0] vram_waddr = 0;
 reg [15:0] vram_wdata;
 
 reg vram_wren;
@@ -55,6 +55,7 @@ SB_PLL40_PAD #(
 
 shared_vram svram (
   .clk(pll_out),
+  .reset(reset),
 
   .rden(vram_rden),
   .raddr(vram_raddr),
@@ -69,7 +70,7 @@ shared_vram svram (
 
 VGA vga (
   .clk(pll_out),
-  .clken(1),
+  .clken(!reset),
 
   .vram_rdata(vram_rdata),
   .vram_raddr(vram_raddr),
@@ -91,16 +92,13 @@ always @(posedge pll_out) begin
       vram_wren <= 0;
       written <= 1;
     end else begin
-      vram_wren <= BTN1;
       vram_wdata <= BTN3 ? 16'hffff : 16'b0;
+      vram_wren <= BTN1;
     end
   end else if (!BTN1) begin
     written <= 0;
+    // vram_waddr <= vram_waddr == (14'h2000 - 1) ? 0 : vram_waddr + 1;
   end
-end
-
-always @(posedge BTN2) begin
-  vram_waddr <= vram_waddr == (14'h2000 - 1) ? 0 : vram_waddr + 1;
 end
 
 endmodule

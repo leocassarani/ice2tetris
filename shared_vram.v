@@ -1,5 +1,6 @@
 module shared_vram (
   input clk,
+  input reset,
 
   input rden,
   input [13:0] raddr,
@@ -12,11 +13,12 @@ module shared_vram (
   output reg wrack,
 );
 
-wire ram_wren = !rden && wren;
-
-wire [13:0] ram_addr = rden ? raddr : wren ? waddr : 0;
-wire [15:0] ram_din = ram_wren ? wdata : 0;
+reg [13:0] ram_addr = 0;
+reg [15:0] ram_din = 0;
 wire [15:0] ram_dout;
+reg ram_wren = 0;
+
+reg [1:0] state = 0;
 
 SB_SPRAM256KA spram (
   .CLOCK(clk),
@@ -32,15 +34,54 @@ SB_SPRAM256KA spram (
 );
 
 always @(posedge clk) begin
-  if (rden) begin
-    rdata <= ram_dout;
-  end else if (wren && !wrack) begin
-    wrack <= 1;
-  end
+  if (!reset) begin
+    wrack <= 1'b0;
 
-  // Reset the write ACK signal if it was previously set
-  if (wrack) begin
-    wrack <= 0;
+    case (state)
+      0: begin
+        if (rden) begin
+          ram_addr <= raddr;
+          ram_din <= 16'b0;
+          ram_wren <= 1'b0;
+          state <= 1;
+        end else if (wren) begin
+          ram_addr <= waddr;
+          ram_din <= wdata;
+          ram_wren <= 1'b1;
+          state <= 3;
+        end
+      end
+
+      1: begin
+        state <= 2;
+      end
+
+      2: begin
+        rdata <= ram_dout;
+
+        if (rden) begin
+          ram_addr <= raddr;
+          ram_din <= 16'b0;
+          ram_wren <= 1'b0;
+          state <= 1;
+        end else begin
+          state <= 0;
+        end
+      end
+
+      3: begin
+        ram_wren <= 1'b0;
+        wrack <= 1'b1;
+
+        if (rden) begin
+          ram_addr <= raddr;
+          ram_din <= 16'b0;
+          state <= 1;
+        end else begin
+          state <= 0;
+        end
+      end
+    endcase
   end
 end
 

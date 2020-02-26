@@ -52,31 +52,35 @@ wire [13:0] vram_line = 32 * y;
 assign vram_raddr = vram_line + vram_offset;
 
 always @(posedge clk) begin
-  if (display) begin
-    // Negate the pixel value so that 1 = black, 0 = white.
-    pixel <= ~pixel_word[x[3:0]];
+  if (clken) begin
+    if (display) begin
+      // Negate the pixel value so that 1 = black, 0 = white.
+      pixel <= ~pixel_word[x[3:0]];
 
-    case (x[3:0])
-      4'b0000: begin
-        pixel_word <= vram_rdata;
-        pixel <= ~vram_rdata[0];
-        vram_rden <= 0;
-      end
+      case (x[3:0])
+        4'b0000: begin
+          pixel_word <= vram_rdata;
+          // pixel_word <= 16'b1000000000000001;
+          // pixel <= ~vram_rdata[0];
+          // pixel <= 1'b1;
+          vram_rden <= 0;
+        end
 
-      4'b1000: begin
-        vram_offset <= vram_offset + 1;
-      end
+        4'b1000: begin
+          vram_offset <= vram_offset + 1;
+        end
 
-      4'b1110: begin
+        4'b1101: begin
+          vram_rden <= 1;
+        end
+      endcase
+    end else begin
+      pixel <= 0;
+      vram_offset <= 0;
+
+      if (h_count == H_MIN - 3) begin
         vram_rden <= 1;
       end
-    endcase
-  end else begin
-    pixel <= 0;
-    vram_offset <= 0;
-
-    if (h_count == H_MIN - 2) begin
-      vram_rden <= 1;
     end
   end
 end
