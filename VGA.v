@@ -6,6 +6,7 @@ module VGA (
 
   input [15:0] vram_rdata,
   output [13:0] vram_raddr,
+  output reg vram_rden,
 
   output h_sync, v_sync,
   output [3:0] red, green, blue,
@@ -14,17 +15,19 @@ module VGA (
 localparam [6:0] H_BLANK = 64;
 localparam [6:0] V_BLANK = 112;
 
+localparam [9:0] H_MIN = 160 + H_BLANK;
+
 reg [9:0] h_count = 0, v_count = 0;
 
 wire h_sync_pulse = h_count >= 16 && h_count < 112;
-wire h_display = h_count >= (160 + H_BLANK) && h_count < (160 + H_BLANK + 512);
+wire h_display = h_count >= H_MIN && h_count < (H_MIN + 512);
 wire h_end = h_count == 799;
 
 wire v_sync_pulse = v_count >= 490 && v_count < 492;
 wire v_display = v_count >= V_BLANK && v_count < (V_BLANK + 256);
 wire v_end = v_count == 524;
 
-wire [9:0] x = h_display ? h_count - (160 + H_BLANK) : 0; // range: 0-511
+wire [9:0] x = h_display ? h_count - H_MIN : 0; // range: 0-511
 wire [9:0] y = v_display ? v_count - V_BLANK : 0;         // range: 0-255
 
 reg [15:0] pixel_word;
@@ -53,15 +56,23 @@ always @(posedge clk) begin
       4'b0000: begin
         pixel_word <= vram_rdata;
         pixel <= ~vram_rdata[0];
+        vram_rden <= 0;
       end
 
-      4'b1000: begin
+      4'b1100: begin
         vram_offset <= vram_offset + 1;
+        vram_rden <= 1;
       end
     endcase
   end else begin
     pixel <= 0;
     vram_offset <= 0;
+
+    if (v_display && h_count >= H_MIN - 4 && h_count < H_MIN) begin
+      vram_rden <= 1;
+    end else begin
+      vram_rden <= 0;
+    end
   end
 end
 

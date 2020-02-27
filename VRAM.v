@@ -1,10 +1,12 @@
 module VRAM (
   input clk,
   input reset,
+
+  input rden,
   input [13:0] raddr,
 
   output loaded,
-  output [15:0] out,
+  output reg [15:0] out,
 
   input spi_miso,
   output spi_cs, output spi_sclk, output spi_mosi,
@@ -19,6 +21,11 @@ wire ram_write = !reset && loading && rom_ready;
 
 wire rom_ready;
 wire [15:0] rom_out;
+
+reg [13:0] ram_raddr;
+wire [15:0] ram_out;
+
+reg state = 0;
 
 ROM rom (
   .clk(clk),
@@ -36,19 +43,37 @@ ROM rom (
 SB_SPRAM256KA spram (
   .CLOCK(clk),
   .CHIPSELECT(1'b1),
-  .ADDRESS(loading ? waddr[13:0] : raddr),
+  .ADDRESS(loading ? waddr[13:0] : ram_raddr),
   .WREN(ram_write),
   .MASKWREN(4'b1111),
   .DATAIN(loading ? rom_out : 16'b0),
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
-  .DATAOUT(out),
+  .DATAOUT(ram_out),
 );
 
 always @(posedge clk) begin
   if (ram_write) begin
     waddr <= waddr + 1;
+  end else begin
+    case (state)
+      0: begin
+        if (rden) begin
+          ram_raddr <= raddr;
+          state <= 1;
+        end
+      end
+
+      1: begin
+        if (rden) begin
+          out <= ram_out;
+          ram_raddr <= raddr;
+        end else begin
+          state <= 0;
+        end
+      end
+    endcase
   end
 end
 

@@ -3,7 +3,7 @@
 module Computer (
   input CLK,
   input FLASH_IO1,
-  output LEDR_N,
+  output LEDR_N, LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8, P1B9, P1B10,
   output FLASH_SCK, FLASH_SSB, FLASH_IO0,
@@ -14,7 +14,9 @@ wire reset = !pll_locked;
 
 wire vram_ready;
 assign LEDR_N = !vram_ready;
+assign LEDG_N = !vram_rden;
 
+wire vram_rden;
 wire [13:0] vram_raddr;
 wire [15:0] vram_rdata;
 
@@ -35,6 +37,7 @@ SB_PLL40_PAD #(
 VRAM vram (
   .clk(pll_out),
   .reset(reset),
+  .rden(vram_rden),
   .raddr(vram_raddr),
   .out(vram_rdata),
   .loaded(vram_ready),
@@ -49,8 +52,9 @@ VGA vga (
   .clk(pll_out),
   .clken(vram_ready),
 
-  .vram_rdata(vram_rdata),
+  .vram_rden(vram_rden),
   .vram_raddr(vram_raddr),
+  .vram_rdata(vram_rdata),
 
   .h_sync(P1B7),
   .v_sync(P1B8),
