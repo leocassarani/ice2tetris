@@ -33,6 +33,7 @@ set_io P1B10      28
 
 # Buttons (PMOD 2)
 set_io BTN1       20
+set_io BTN2       19
 set_io BTN3       18
 
 # Clocks
