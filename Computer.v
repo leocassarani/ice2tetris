@@ -36,7 +36,7 @@ SB_PLL40_PAD #(
   .BYPASS(1'b0),
   .LOCK(pll_locked),
   .PACKAGEPIN(CLK),
-  .PLLOUTCORE(pll_out),
+  .PLLOUTGLOBAL(pll_out),
 );
 
 VRAM vram (
