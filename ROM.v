@@ -4,7 +4,7 @@ module ROM (
   input clk,
   input reset,
 
-  input [13:0] raddr,
+  input [14:0] raddr,
   output [15:0] rdata,
   output ready,
 
@@ -12,29 +12,48 @@ module ROM (
   output spi_cs, output spi_sclk, output spi_mosi,
 );
 
-wire [15:0] flash_out;
-
-reg [15:0] waddr = 0;
-wire loading = waddr < 16'h4000;
+reg [15:0] ram_waddr = 0;
+wire loading = ram_waddr < 16'h8000;
 
 assign ready = !loading;
+
+wire ram_select = loading ? ram_waddr[14] : raddr[14];
+wire [13:0] ram_addr = loading ? ram_waddr[13:0] : raddr[13:0];
+wire [15:0] ram_din = loading ? flash_out : 16'b0;
+
+wire [15:0] rdata_lo, rdata_hi;
+assign rdata = ram_select ? rdata_hi : rdata_lo;
 
 wire flash_ready;
 wire ram_write = !reset && loading && flash_ready;
 
-wire [23:0] flash_raddr = 24'h100000 + { waddr, 1'b0 };
+wire [23:0] flash_raddr = 24'h100000 + { ram_waddr, 1'b0 };
+wire [15:0] flash_out;
 
-SB_SPRAM256KA spram (
+SB_SPRAM256KA spram_lo (
   .CLOCK(clk),
-  .CHIPSELECT(1'b1),
-  .ADDRESS(loading ? waddr[13:0] : raddr),
+  .CHIPSELECT(!ram_select),
+  .ADDRESS(ram_addr),
   .WREN(ram_write),
   .MASKWREN(4'b1111),
-  .DATAIN(loading ? flash_out : 16'b0),
+  .DATAIN(ram_din),
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
-  .DATAOUT(rdata),
+  .DATAOUT(rdata_lo),
+);
+
+SB_SPRAM256KA spram_hi (
+  .CLOCK(clk),
+  .CHIPSELECT(ram_select),
+  .ADDRESS(ram_addr),
+  .WREN(ram_write),
+  .MASKWREN(4'b1111),
+  .DATAIN(ram_din),
+  .STANDBY(1'b0),
+  .SLEEP(1'b0),
+  .POWEROFF(1'b1),
+  .DATAOUT(rdata_hi),
 );
 
 spi_flash_mem flash (
@@ -54,7 +73,7 @@ spi_flash_mem flash (
 
 always @(posedge clk) begin
   if (ram_write) begin
-    waddr <= waddr + 1;
+    ram_waddr <= ram_waddr + 1;
   end
 end
 

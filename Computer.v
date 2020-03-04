@@ -13,7 +13,7 @@ module Computer (
 wire pll_out, pll_locked;
 wire reset = !pll_locked;
 
-reg [13:0] rom_raddr = 0;
+reg [14:0] rom_raddr = 0;
 wire [15:0] rom_rdata;
 
 wire rom_ready;
