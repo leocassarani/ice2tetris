@@ -58,7 +58,7 @@ ProgramCounter program_counter (
   .reset(reset),
   .in(a_reg),
   .load(jump),
-  .inc(1),
+  .inc(1'b1),
   .out(pc),
 );
 

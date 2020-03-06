@@ -8,7 +8,7 @@ module RAM (
 
 SB_SPRAM256KA spram (
   .CLOCK(clk),
-  .CHIPSELECT(1),
+  .CHIPSELECT(1'b1),
   .ADDRESS(address),
   .WREN(load),
   .MASKWREN(4'b1111),

@@ -1,32 +1,69 @@
+`default_nettype none
+
 module ROM (
   input clk,
-  input [15:0] address,
-  output reg [15:0] instruction,
+  input reset,
 
-  output spi_cs, output spi_sclk, output spi_mosi,
+  input [15:0] address,
+  output [15:0] instruction,
+  output ready,
+
   input spi_miso,
+  output spi_cs, output spi_sclk, output spi_mosi,
 );
 
-wire ready;
-reg reset = 1;
+reg [15:0] ram_waddr = 0;
+wire loading = ram_waddr < 16'h8000; // Read the first 32K addresses
 
+assign ready = !loading;
+
+wire ram_select = loading ? ram_waddr[14] : address[14];
+wire [13:0] ram_addr = loading ? ram_waddr[13:0] : address[13:0];
+wire [15:0] ram_din = loading ? flash_data : 16'b0;
+
+wire [15:0] ram_data_lo, ram_data_hi;
+assign instruction = ram_select ? ram_data_hi : ram_data_lo;
+
+wire flash_ready;
+wire ram_write = !reset && loading && flash_ready;
+
+wire [23:0] flash_addr = 24'h100000 + { ram_waddr, 1'b0 }; // 1024KB + (addr << 1)
 wire [15:0] flash_data;
-wire [23:0] flash_addr = 24'h100000 + {address, 1'b0}; // 1024KB + (addr << 1);
 
-always @(posedge clk) begin
-  reset <= 0;
-end
+SB_SPRAM256KA spram_lo (
+  .CLOCK(clk),
+  .CHIPSELECT(!ram_select),
+  .ADDRESS(ram_addr),
+  .WREN(ram_write),
+  .MASKWREN(4'b1111),
+  .DATAIN(ram_din),
+  .STANDBY(1'b0),
+  .SLEEP(1'b0),
+  .POWEROFF(1'b1),
+  .DATAOUT(ram_data_lo),
+);
 
-always @(posedge ready) begin
-  instruction <= flash_data;
-end
+SB_SPRAM256KA spram_hi (
+  .CLOCK(clk),
+  .CHIPSELECT(ram_select),
+  .ADDRESS(ram_addr),
+  .WREN(ram_write),
+  .MASKWREN(4'b1111),
+  .DATAIN(ram_din),
+  .STANDBY(1'b0),
+  .SLEEP(1'b0),
+  .POWEROFF(1'b1),
+  .DATAOUT(ram_data_hi),
+);
 
 spi_flash_mem flash (
   .clk(clk),
+  .clken(loading),
   .reset(reset),
-  .address(flash_addr),
+
+  .raddr(flash_addr),
   .rdata(flash_data),
-  .ready(ready),
+  .ready(flash_ready),
 
   .spi_cs(spi_cs),
   .spi_sclk(spi_sclk),
@@ -34,11 +71,17 @@ spi_flash_mem flash (
   .spi_miso(spi_miso),
 );
 
+always @(posedge clk) begin
+  if (ram_write) begin
+    ram_waddr <= ram_waddr + 1;
+  end
+end
+
 endmodule
 
 module spi_flash_mem (
-  input clk, reset,
-  input [23:0] address,
+  input clk, clken, reset,
+  input [23:0] raddr,
 
   output reg ready,
   output reg [15:0] rdata,
@@ -54,7 +97,7 @@ reg [2:0] state;
 always @(posedge clk) begin
   ready <= 0;
 
-  if (reset || ready) begin
+  if (reset || ready || !clken) begin
     spi_cs <= 1;
     spi_sclk <= 1;
     xfer_cnt <= 0;
@@ -68,7 +111,7 @@ always @(posedge clk) begin
         spi_mosi <= buffer[7];
       end else begin
         spi_sclk <= 1;
-        buffer <= {buffer, spi_miso};
+        buffer <= { buffer, spi_miso };
         xfer_cnt <= xfer_cnt - 1;
       end
     end else begin
@@ -79,17 +122,17 @@ always @(posedge clk) begin
           state <= 1;
         end
         1: begin
-          buffer <= address[23:16];
+          buffer <= raddr[23:16];
           xfer_cnt <= 8;
           state <= 2;
         end
         2: begin
-          buffer <= address[15:8];
+          buffer <= raddr[15:8];
           xfer_cnt <= 8;
           state <= 3;
         end
         3: begin
-          buffer <= address[7:0];
+          buffer <= raddr[7:0];
           xfer_cnt <= 8;
           state <= 4;
         end
