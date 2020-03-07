@@ -1,4 +1,4 @@
-PROJ = Computer
+PROJ = computer
 ADD_SRC =
 
 PIN_DEF = icebreaker.pcf
