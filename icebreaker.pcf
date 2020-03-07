@@ -31,6 +31,9 @@ set_io P1B8       36
 set_io P1B9       32
 set_io P1B10      28
 
+# Buttons (PMOD 2)
+set_io BTN1       20
+
 # Clocks
 set_frequency CLK     12
 set_frequency clk_out 25.125
