@@ -2,17 +2,17 @@
 
 module computer (
   input CLK,
+  input FLASH_IO1,
   output LEDR_N, LEDG_N,
+  output FLASH_SCK, FLASH_SSB, FLASH_IO0,
 );
 
 wire pll_out, pll_locked;
+wire reset = !pll_locked;
+wire rom_ready;
 
-reg [24:0] clkdiv = 0;
-reg clkdiv_pulse = 0;
-reg flash = 0;
-
-assign LEDR_N = flash;
-assign LEDG_N = !flash;
+assign LEDR_N = !pll_locked;
+assign LEDG_N = !rom_ready;
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -28,20 +28,14 @@ SB_PLL40_PAD #(
   .PLLOUTGLOBAL(pll_out),
 );
 
-always @(posedge pll_out) begin
-  if (pll_locked) begin
-    if (clkdiv == 25125000) begin
-      clkdiv <= 0;
-      clkdiv_pulse <= 1;
-    end else begin
-      clkdiv <= clkdiv + 1;
-      clkdiv_pulse <= 0;
-    end
-  end
-end
-
-always @(posedge clkdiv_pulse) begin
-  flash <= !flash;
-end
+rom rom (
+  .clk(pll_out),
+  .reset(reset),
+  .ready(rom_ready),
+  .spi_cs(FLASH_SSB),
+  .spi_sclk(FLASH_SCK),
+  .spi_mosi(FLASH_IO0),
+  .spi_miso(FLASH_IO1),
+);
 
 endmodule

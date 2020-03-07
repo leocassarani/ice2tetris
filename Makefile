@@ -1,5 +1,5 @@
 PROJ = computer
-ADD_SRC =
+ADD_SRC = rom.v
 
 PIN_DEF = icebreaker.pcf
 DEVICE = up5k
