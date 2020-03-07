@@ -13,4 +13,4 @@ set_io FLASH_IO1  17
 
 # Clocks
 set_frequency CLK     12
-set_frequency pll_out 25.125
+set_frequency clk_out 25.125

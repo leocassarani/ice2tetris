@@ -7,29 +7,21 @@ module Computer (
   output FLASH_SCK, FLASH_SSB, FLASH_IO0,
 );
 
-wire pll_out, pll_locked;
-wire reset = !pll_locked;
+wire clk_out, clk_locked;
+wire reset = !clk_locked;
 wire rom_ready;
 
-assign LEDR_N = !pll_locked;
+assign LEDR_N = !clk_locked;
 assign LEDG_N = !rom_ready;
 
-SB_PLL40_PAD #(
-  .FEEDBACK_PATH("SIMPLE"),
-  .DIVR(4'b0000),        // DIVR = 0
-  .DIVF(7'b1000010),     // DIVF = 66
-  .DIVQ(3'b101),         // DIVQ = 5
-  .FILTER_RANGE(3'b001), // FILTER_RANGE = 1
-) pll_clock (
-  .RESETB(1'b1),
-  .BYPASS(1'b0),
-  .LOCK(pll_locked),
-  .PACKAGEPIN(CLK),
-  .PLLOUTGLOBAL(pll_out),
+Clock clock (
+  .refclk(CLK),
+  .locked(clk_locked),
+  .out(clk_out),
 );
 
 ROM rom (
-  .clk(pll_out),
+  .clk(clk_out),
   .reset(reset),
   .ready(rom_ready),
   .spi_cs(FLASH_SSB),
