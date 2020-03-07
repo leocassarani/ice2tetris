@@ -2,6 +2,7 @@
 
 module computer (
   input CLK,
+  input BTN1,
   input FLASH_IO1,
   output LEDR_N, LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
@@ -12,6 +13,8 @@ module computer (
 wire clk_out, clk_locked;
 wire reset = !clk_locked;
 wire rom_ready;
+
+reg [15:0] rom_address = 0;
 wire [15:0] instruction;
 
 assign LEDR_N = !clk_locked;
@@ -27,7 +30,7 @@ rom rom (
   .clk(clk_out),
   .reset(reset),
   .ready(rom_ready),
-  .address(16'b0),
+  .address(rom_address),
   .instruction(instruction),
   .spi_cs(FLASH_SSB),
   .spi_sclk(FLASH_SCK),
@@ -41,5 +44,9 @@ screen screen (
   .dout_lo({ P1A10, P1A9, P1A8, P1A7, P1A4, P1A3, P1A2, P1A1 }),
   .dout_hi({ P1B10, P1B9, P1B8, P1B7, P1B4, P1B3, P1B2, P1B1 }),
 );
+
+always @(posedge BTN1) begin
+  rom_address <= rom_address + 1;
+end
 
 endmodule
