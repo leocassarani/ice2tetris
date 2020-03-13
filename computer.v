@@ -12,9 +12,11 @@ module computer (
 wire clk_out, clk_locked;
 wire rom_ready;
 
+wire [15:0] a_reg, d_reg;
 wire [15:0] rom_address;
 wire [15:0] instruction;
-wire [15:0] a_reg, d_reg;
+wire [15:0] mem_address, mem_rdata, mem_wdata;
+wire mem_write;
 
 assign LEDR_N = !rom_ready;
 
@@ -29,8 +31,20 @@ cpu cpu (
   .reset(!rom_ready),
   .instruction(instruction),
   .prog_counter(rom_address),
+  .mem_rdata(mem_rdata),
+  .mem_wdata(mem_wdata),
+  .mem_write(mem_write),
+  .mem_address(mem_address),
   .a_reg(a_reg),
   .d_reg(d_reg),
+);
+
+memory memory (
+  .clk(clk_out),
+  .address(mem_address),
+  .load(mem_write),
+  .in(mem_wdata),
+  .out(mem_rdata),
 );
 
 rom rom (
