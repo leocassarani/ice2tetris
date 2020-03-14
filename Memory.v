@@ -2,7 +2,9 @@
 
 module Memory (
   input clk,
+  input load,
   input [15:0] address,
+  input [15:0] in,
   output [15:0] out,
 );
 
@@ -10,9 +12,9 @@ SB_SPRAM256KA ram (
   .CLOCK(clk),
   .CHIPSELECT(1'b1),
   .ADDRESS(address[13:0]),
-  .WREN(1'b0),
+  .WREN(load),
   .MASKWREN(4'b1111),
-  .DATAIN(16'b0),
+  .DATAIN(in),
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
