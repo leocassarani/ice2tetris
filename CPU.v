@@ -4,13 +4,17 @@ module CPU (
   input clk, reset,
   input [15:0] instruction,
   input [15:0] mem_rdata,
+  output mem_write,
   output [15:0] mem_address,
+  output [15:0] mem_wdata,
   output reg [15:0] prog_counter,
   output reg [15:0] a_reg,
   output reg [15:0] d_reg,
 );
 
 assign mem_address = a_reg;
+assign mem_write = i && d3;
+assign mem_wdata = alu_out;
 
 wire i = instruction[15];
 wire a = instruction[12];
