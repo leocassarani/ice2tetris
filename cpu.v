@@ -5,13 +5,17 @@ module cpu (
   input clk, reset,
   input [15:0] instruction,
   input [15:0] mem_rdata,
+  output mem_write,
   output [15:0] mem_address,
+  output [15:0] mem_wdata,
   output reg [15:0] prog_counter,
   output reg [15:0] a_reg,
   output reg [15:0] d_reg
 );
 
 assign mem_address = a_reg;
+assign mem_write = state == write_back && d3;
+assign mem_wdata = alu_out;
 
 wire i = instruction[15];
 wire a = instruction[12];
@@ -20,7 +24,7 @@ reg c1, c2, c3, c4, c5, c6;
 reg d1, d2, d3;
 reg j1, j2, j3;
 
-reg [15:0] alu_y;
+reg [15:0] alu_x, alu_y;
 wire [15:0] alu_out;
 wire alu_zero, alu_neg;
 wire alu_pos = !(alu_neg || alu_zero);
@@ -34,7 +38,7 @@ localparam [1:0] inst_fetch  = 2'd0,
 reg [1:0] state = inst_fetch;
 
 alu alu (
-  .x(d_reg),
+  .x(alu_x),
   .y(alu_y),
   .zx(c1),
   .nx(c2),
@@ -62,6 +66,7 @@ always @(posedge clk) begin
       inst_decode: begin
         if (i) begin // C-instruction
           { c1, c2, c3, c4, c5, c6, d1, d2, d3, j1, j2, j3 } <= instruction[11:0];
+          alu_x <= d_reg;
           alu_y <= a ? mem_rdata : a_reg;
           state <= write_back;
         end else begin // A-instruction
