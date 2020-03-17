@@ -3,14 +3,16 @@
 module CPU (
   input clk, reset,
   input [15:0] instruction,
+  input mem_busy,
   input [15:0] mem_rdata,
   output mem_write,
   output [15:0] mem_address,
   output [15:0] mem_wdata,
   output reg [15:0] prog_counter,
-  output reg [15:0] a_reg,
-  output reg [15:0] d_reg,
 );
+
+reg [15:0] a_reg;
+reg [15:0] d_reg;
 
 assign mem_address = a_reg;
 assign mem_write = i && d3;
@@ -23,7 +25,7 @@ reg c1, c2, c3, c4, c5, c6;
 reg d1, d2, d3;
 reg j1, j2, j3;
 
-reg [15:0] alu_y;
+reg [15:0] alu_x, alu_y;
 wire [15:0] alu_out;
 wire alu_zero, alu_neg;
 wire alu_pos = !(alu_neg || alu_zero);
@@ -32,12 +34,13 @@ wire jump = (j1 && alu_neg) || (j2 && alu_zero) || (j3 && alu_pos);
 
 localparam [1:0] inst_fetch  = 2'd0,
                  inst_decode = 2'd1,
-                 write_back  = 2'd2;
+                 write_back  = 2'd2,
+                 mem_wait    = 2'd3;
 
 reg [1:0] state = inst_fetch;
 
 ALU alu (
-  .x(d_reg),
+  .x(alu_x),
   .y(alu_y),
   .zx(c1),
   .nx(c2),
@@ -56,7 +59,7 @@ always @(posedge clk) begin
     a_reg <= 0;
     d_reg <= 0;
     state <= inst_fetch;
-  end else begin
+  end else if (!mem_busy) begin
     case (state)
       inst_fetch: begin
         state <= inst_decode;
@@ -65,6 +68,7 @@ always @(posedge clk) begin
       inst_decode: begin
         if (i) begin // C-instruction
           { c1, c2, c3, c4, c5, c6, d1, d2, d3, j1, j2, j3 } <= instruction[11:0];
+          alu_x <= d_reg;
           alu_y <= a ? mem_rdata : a_reg;
           state <= write_back;
         end else begin // A-instruction
@@ -89,6 +93,10 @@ always @(posedge clk) begin
           prog_counter <= prog_counter + 1;
         end
 
+        state <= d3 ? mem_wait : inst_fetch;
+      end
+
+      mem_wait: begin
         state <= inst_fetch;
       end
     endcase

@@ -2,7 +2,9 @@
 set_io CLK        35
 
 # LEDs
+set_io BTN_N      10
 set_io LEDR_N     11
+set_io LEDG_N     37
 
 # SPI Flash
 set_io FLASH_SCK  15
