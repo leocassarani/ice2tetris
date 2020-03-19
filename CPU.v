@@ -3,14 +3,16 @@
 module CPU (
   input clk, reset,
   input [15:0] instruction,
+  input mem_busy,
   input [15:0] mem_rdata,
   output mem_write,
   output [15:0] mem_address,
   output [15:0] mem_wdata,
   output reg [15:0] prog_counter,
-  output reg [15:0] a_reg,
-  output reg [15:0] d_reg,
 );
+
+reg [15:0] a_reg;
+reg [15:0] d_reg;
 
 assign mem_address = a_reg;
 assign mem_write = state == write_back && d3;
@@ -56,7 +58,7 @@ always @(posedge clk) begin
     a_reg <= 0;
     d_reg <= 0;
     state <= inst_fetch;
-  end else begin
+  end else if (!mem_busy) begin
     case (state)
       inst_fetch: begin
         state <= inst_decode;
