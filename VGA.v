@@ -12,19 +12,22 @@ module VGA (
   output [3:0] red, green, blue,
 );
 
+localparam [9:0] WIDTH = 512;
+localparam [9:0] HEIGHT = 256;
+
 localparam [6:0] H_BLANK = 64;
 localparam [6:0] V_BLANK = 112;
 
-localparam [9:0] H_MIN = 160 + H_BLANK;
+localparam [7:0] H_MIN = 160 + H_BLANK;
 
 reg [9:0] h_count = 0, v_count = 0;
 
 wire h_sync_pulse = h_count >= 16 && h_count < 112;
-wire h_display = h_count >= H_MIN && h_count < (H_MIN + 512);
+wire h_display = h_count >= H_MIN && h_count < (H_MIN + WIDTH);
 wire h_end = h_count == 799;
 
 wire v_sync_pulse = v_count >= 490 && v_count < 492;
-wire v_display = v_count >= V_BLANK && v_count < (V_BLANK + 256);
+wire v_display = v_count >= V_BLANK && v_count < (V_BLANK + HEIGHT);
 wire v_end = v_count == 524;
 
 wire [9:0] x = h_display ? h_count - H_MIN : 0;   // range: 0-511

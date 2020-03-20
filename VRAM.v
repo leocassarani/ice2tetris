@@ -11,30 +11,45 @@ module VRAM (
   input [15:0] s_din,
 
   output s_busy,
-  output [15:0] p_dout,
-  output [15:0] s_dout,
+  output reg [15:0] p_dout,
+  output reg [15:0] s_dout,
 );
 
-wire load = !p_read && s_write;
-wire [15:0] in = p_read ? 16'b0 : s_din;
-wire [13:0] address = { 1'b0, p_read ? p_addr : s_addr };
-wire [15:0] out;
-
 assign s_busy = p_read;
-assign p_dout = p_read ? out : 16'b0;
-assign s_dout = p_read ? 16'b0 : out;
+
+reg ram_write;
+reg [13:0] ram_addr;
+reg [15:0] ram_din;
+wire [15:0] ram_dout;
+
+reg p_read_1, p_read_2;
 
 SB_SPRAM256KA ram (
   .CLOCK(clk),
   .CHIPSELECT(1'b1),
-  .ADDRESS(address),
-  .WREN(load),
+  .ADDRESS(ram_addr),
+  .WREN(ram_write),
   .MASKWREN(4'b1111),
-  .DATAIN(in),
+  .DATAIN(ram_din),
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
-  .DATAOUT(out),
+  .DATAOUT(ram_dout),
 );
+
+always @(posedge clk) begin
+  ram_addr  <= p_read ? p_addr : s_addr;
+  ram_write <= !p_read && s_write;
+  ram_din   <= s_din;
+
+  p_read_1  <= p_read;
+  p_read_2  <= p_read_1;
+
+  if (p_read_2) begin
+    p_dout <= ram_dout;
+  end else begin
+    s_dout <= ram_dout;
+  end
+end
 
 endmodule

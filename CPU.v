@@ -32,11 +32,13 @@ wire alu_pos = !(alu_neg || alu_zero);
 
 wire jump = (j1 && alu_neg) || (j2 && alu_zero) || (j3 && alu_pos);
 
-localparam [1:0] inst_fetch  = 2'd0,
-                 inst_decode = 2'd1,
-                 write_back  = 2'd2;
+localparam [2:0] inst_fetch  = 3'd0,
+                 inst_decode = 3'd1,
+                 mem_read_1  = 3'd2,
+                 mem_read_2  = 3'd3,
+                 write_back  = 3'd4;
 
-reg [1:0] state = inst_fetch;
+reg [2:0] state = inst_fetch;
 
 ALU alu (
   .x(alu_x),
@@ -68,13 +70,27 @@ always @(posedge clk) begin
         if (i) begin // C-instruction
           { c1, c2, c3, c4, c5, c6, d1, d2, d3, j1, j2, j3 } <= instruction[11:0];
           alu_x <= d_reg;
-          alu_y <= a ? mem_rdata : a_reg;
-          state <= write_back;
+
+          if (a) begin
+            state <= mem_read_1;
+          end else begin
+            alu_y <= a_reg;
+            state <= write_back;
+          end
         end else begin // A-instruction
           a_reg <= instruction;
           prog_counter <= prog_counter + 1;
           state <= inst_fetch;
         end
+      end
+
+      mem_read_1: begin
+        state <= mem_read_2;
+      end
+
+      mem_read_2: begin
+        alu_y <= mem_rdata;
+        state <= write_back;
       end
 
       write_back: begin
