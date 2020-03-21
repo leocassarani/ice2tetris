@@ -60,7 +60,7 @@ always @(posedge clk) begin
     a_reg <= 0;
     d_reg <= 0;
     state <= inst_fetch;
-  end else if (!mem_busy) begin
+  end else begin
     case (state)
       inst_fetch: begin
         state <= inst_decode;
@@ -71,11 +71,11 @@ always @(posedge clk) begin
           { c1, c2, c3, c4, c5, c6, d1, d2, d3, j1, j2, j3 } <= instruction[11:0];
           alu_x <= d_reg;
 
-          if (a) begin
-            state <= mem_read_1;
-          end else begin
+          if (!a) begin
             alu_y <= a_reg;
             state <= write_back;
+          end else if (!mem_busy) begin
+            state <= mem_read_1;
           end
         end else begin // A-instruction
           a_reg <= instruction;
@@ -94,21 +94,23 @@ always @(posedge clk) begin
       end
 
       write_back: begin
-        if (d1) begin // Write to A register?
-          a_reg <= alu_out;
-        end
+        if (!mem_busy) begin
+          if (d1) begin // Write to A register?
+            a_reg <= alu_out;
+          end
 
-        if (d2) begin // Write to D register?
-          d_reg <= alu_out;
-        end
+          if (d2) begin // Write to D register?
+            d_reg <= alu_out;
+          end
 
-        if (jump) begin
-          prog_counter <= a_reg;
-        end else begin
-          prog_counter <= prog_counter + 1;
-        end
+          if (jump) begin
+            prog_counter <= a_reg;
+          end else begin
+            prog_counter <= prog_counter + 1;
+          end
 
-        state <= inst_fetch;
+          state <= inst_fetch;
+        end
       end
     endcase
   end
