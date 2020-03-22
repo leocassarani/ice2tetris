@@ -34,8 +34,8 @@ wire jump = (j1 && alu_neg) || (j2 && alu_zero) || (j3 && alu_pos);
 
 localparam [2:0] inst_fetch  = 3'd0,
                  inst_decode = 3'd1,
-                 mem_read_1  = 3'd2,
-                 mem_read_2  = 3'd3,
+                 mem_wait    = 3'd2,
+                 mem_read    = 3'd3,
                  write_back  = 3'd4;
 
 reg [2:0] state = inst_fetch;
@@ -68,14 +68,17 @@ always @(posedge clk) begin
 
       inst_decode: begin
         if (i) begin // C-instruction
-          { c1, c2, c3, c4, c5, c6, d1, d2, d3, j1, j2, j3 } <= instruction[11:0];
+          { c1, c2, c3, c4, c5, c6 } <= instruction[11:6];
+          { d1, d2, d3 } <= instruction[5:3];
+          { j1, j2, j3 } <= instruction[2:0];
+
           alu_x <= d_reg;
 
           if (!a) begin
             alu_y <= a_reg;
             state <= write_back;
           end else if (!mem_busy) begin
-            state <= mem_read_1;
+            state <= mem_wait;
           end
         end else begin // A-instruction
           a_reg <= instruction;
@@ -84,11 +87,11 @@ always @(posedge clk) begin
         end
       end
 
-      mem_read_1: begin
-        state <= mem_read_2;
+      mem_wait: begin
+        state <= mem_read;
       end
 
-      mem_read_2: begin
+      mem_read: begin
         alu_y <= mem_rdata;
         state <= write_back;
       end

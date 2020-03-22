@@ -2,7 +2,6 @@
 
 module VGA (
   input clk,
-  input clken,
 
   input [15:0] vram_rdata,
   output [12:0] vram_raddr,
@@ -77,9 +76,7 @@ always @(posedge clk) begin
       vram_rden <= 0;
     end
   end
-end
 
-always @(posedge clk) begin
   if (h_end && v_end) begin
     h_count <= 0;
     v_count <= 0;
