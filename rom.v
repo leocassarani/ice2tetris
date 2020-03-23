@@ -2,9 +2,7 @@
 `timescale 1ns / 1ps
 
 module rom (
-  input clk,
-  input reset,
-
+  input clk, clken,
   input [15:0] address,
   output [15:0] instruction,
   output ready,
@@ -31,7 +29,7 @@ wire [15:0] ram_data_lo, ram_data_hi;
 assign instruction = loading ? 16'b0 : (ram_select_1 ? ram_data_hi : ram_data_lo);
 
 wire flash_ready;
-wire ram_write = !reset && loading && flash_ready;
+wire ram_write = clken && loading && flash_ready;
 
 wire [23:0] flash_addr = 24'h100000 + { ram_waddr, 1'b0 }; // 1024KB + (addr << 1)
 wire [15:0] flash_data;
@@ -64,8 +62,7 @@ SB_SPRAM256KA spram_hi (
 
 spi_flash_mem flash (
   .clk(clk),
-  .clken(loading),
-  .reset(reset),
+  .clken(clken && loading),
 
   .raddr(flash_addr),
   .rdata(flash_data),
@@ -88,7 +85,7 @@ end
 endmodule
 
 module spi_flash_mem (
-  input clk, clken, reset,
+  input clk, clken,
   input [23:0] raddr,
 
   output reg ready,
@@ -105,7 +102,7 @@ reg [2:0] state;
 always @(posedge clk) begin
   ready <= 0;
 
-  if (reset || ready || !clken) begin
+  if (!clken || ready) begin
     spi_cs <= 1;
     spi_sclk <= 1;
     xfer_cnt <= 0;
