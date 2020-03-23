@@ -4,7 +4,7 @@ module Computer (
   input CLK,
   input BTN_N, BTN1, BTN2, BTN3,
   input FLASH_IO1,
-  output LEDR_N,
+  output LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8,
   output FLASH_SCK, FLASH_SSB, FLASH_IO0,
@@ -18,7 +18,7 @@ wire [15:0] instruction;
 wire [15:0] mem_address, mem_rdata, mem_wdata;
 wire mem_busy, mem_load;
 
-assign LEDR_N = !rom_ready;
+assign LEDG_N = !rom_ready;
 
 Clock clock (
   .refclk(CLK),
