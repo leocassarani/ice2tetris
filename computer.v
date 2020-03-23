@@ -18,6 +18,7 @@ wire [15:0] instruction;
 wire [15:0] mem_address, mem_rdata, mem_wdata;
 wire mem_busy, mem_load;
 
+wire reset = !rom_ready || !BTN_N;
 assign LEDG_N = !rom_ready;
 
 clock clock (
@@ -28,7 +29,7 @@ clock clock (
 
 cpu cpu (
   .clk(clk_out),
-  .reset(!rom_ready || !BTN_N),
+  .reset(reset),
   .instruction(instruction),
   .prog_counter(rom_address),
   .mem_busy(mem_busy),
@@ -57,7 +58,7 @@ memory memory (
 
 rom rom (
   .clk(clk_out),
-  .reset(!clk_locked),
+  .clken(clk_locked),
   .ready(rom_ready),
   .address(rom_address),
   .instruction(instruction),
