@@ -2,7 +2,7 @@
 
 module Computer (
   input CLK,
-  input BTN1, BTN2, BTN3,
+  input BTN_N, BTN1, BTN2, BTN3,
   input FLASH_IO1,
   output LEDR_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
@@ -29,7 +29,7 @@ Clock clock (
 
 CPU cpu (
   .clk(clk_out),
-  .reset(!rom_ready),
+  .reset(!rom_ready || !BTN_N),
   .instruction(instruction),
   .prog_counter(rom_address),
   .mem_rdata(mem_rdata),
