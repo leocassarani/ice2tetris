@@ -5,7 +5,7 @@ module CPU (
   input [15:0] instruction,
   input mem_busy,
   input [15:0] mem_rdata,
-  output mem_write,
+  output mem_load,
   output [15:0] mem_address,
   output [15:0] mem_wdata,
   output reg [15:0] prog_counter,
@@ -15,8 +15,10 @@ reg [15:0] a_reg;
 reg [15:0] d_reg;
 
 assign mem_address = a_reg;
-assign mem_write = state == write_back && d3;
+assign mem_load = state == mem_write && d3;
 assign mem_wdata = alu_out;
+
+wire fast_path = a_reg < 16'h4000;
 
 wire i = instruction[15];
 wire a = instruction[12];
@@ -36,7 +38,8 @@ localparam [2:0] inst_fetch  = 3'd0,
                  inst_decode = 3'd1,
                  mem_wait    = 3'd2,
                  mem_read    = 3'd3,
-                 write_back  = 3'd4;
+                 write_back  = 3'd4,
+                 mem_write   = 3'd5;
 
 reg [2:0] state = inst_fetch;
 
@@ -56,9 +59,9 @@ ALU alu (
 
 always @(posedge clk) begin
   if (reset) begin
-    prog_counter <= 0;
     a_reg <= 0;
     d_reg <= 0;
+    prog_counter <= 0;
     state <= inst_fetch;
   end else begin
     case (state)
@@ -76,7 +79,10 @@ always @(posedge clk) begin
 
           if (!a) begin
             alu_y <= a_reg;
-            state <= write_back;
+            state <= mem_write;
+          end else if (fast_path) begin
+            alu_y <= mem_rdata;
+            state <= mem_write;
           end else if (!mem_busy) begin
             state <= mem_wait;
           end
@@ -93,27 +99,31 @@ always @(posedge clk) begin
 
       mem_read: begin
         alu_y <= mem_rdata;
-        state <= write_back;
+        state <= mem_write;
+      end
+
+      mem_write: begin
+        if (fast_path || !mem_busy) begin
+          state <= write_back;
+        end
       end
 
       write_back: begin
-        if (!mem_busy) begin
-          if (d1) begin // Write to A register?
-            a_reg <= alu_out;
-          end
-
-          if (d2) begin // Write to D register?
-            d_reg <= alu_out;
-          end
-
-          if (jump) begin
-            prog_counter <= a_reg;
-          end else begin
-            prog_counter <= prog_counter + 1;
-          end
-
-          state <= inst_fetch;
+        if (d1) begin // Write to A register?
+          a_reg <= alu_out;
         end
+
+        if (d2) begin // Write to D register?
+          d_reg <= alu_out;
+        end
+
+        if (jump) begin
+          prog_counter <= a_reg;
+        end else begin
+          prog_counter <= prog_counter + 1;
+        end
+
+        state <= inst_fetch;
       end
     endcase
   end

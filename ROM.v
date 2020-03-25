@@ -11,16 +11,18 @@ module ROM (
 );
 
 reg [15:0] ram_waddr = 0;
-wire loading = ram_waddr < 16'h8000; // Read the first 32K addresses
 
+wire loading = ram_waddr < 16'h8000; // Read the first 32K addresses
 assign ready = !loading;
 
-wire ram_select = loading ? ram_waddr[14] : address[14];
+wire ram_select_0 = loading ? ram_waddr[14] : address[14];
+reg ram_select_1;
+
 wire [13:0] ram_addr = loading ? ram_waddr[13:0] : address[13:0];
 wire [15:0] ram_din = loading ? flash_data : 16'b0;
 
 wire [15:0] ram_data_lo, ram_data_hi;
-assign instruction = loading ? 16'b0 : (ram_select ? ram_data_hi : ram_data_lo);
+assign instruction = loading ? 16'b0 : (ram_select_1 ? ram_data_hi : ram_data_lo);
 
 wire flash_ready;
 wire ram_write = clken && loading && flash_ready;
@@ -30,7 +32,7 @@ wire [15:0] flash_data;
 
 SB_SPRAM256KA spram_lo (
   .CLOCK(clk),
-  .CHIPSELECT(!ram_select),
+  .CHIPSELECT(!ram_select_0),
   .ADDRESS(ram_addr),
   .WREN(ram_write),
   .MASKWREN(4'b1111),
@@ -43,7 +45,7 @@ SB_SPRAM256KA spram_lo (
 
 SB_SPRAM256KA spram_hi (
   .CLOCK(clk),
-  .CHIPSELECT(ram_select),
+  .CHIPSELECT(ram_select_0),
   .ADDRESS(ram_addr),
   .WREN(ram_write),
   .MASKWREN(4'b1111),
@@ -72,6 +74,8 @@ always @(posedge clk) begin
   if (ram_write) begin
     ram_waddr <= ram_waddr + 1;
   end
+
+  ram_select_1 <= ram_select_0;
 end
 
 endmodule

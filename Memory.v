@@ -16,18 +16,20 @@ module Memory (
 
 wire [15:0] ram_out, screen_out, kbd_out;
 
-wire ram_select = !address[14];
-wire screen_select = address[14] && !address[13];
+wire ram_select_0 = !address[14];
+wire screen_select_0 = address[14] && !address[13];
 
-assign out = ram_select ? (
+reg ram_select_1, screen_select_1;
+
+assign out = ram_select_1 ? (
   ram_out
 ) : (
-  screen_select ? screen_out : kbd_out
+  screen_select_1 ? screen_out : kbd_out
 );
 
 RAM ram (
   .clk(clk),
-  .load(ram_select && load),
+  .load(ram_select_0 && load),
   .address(address[13:0]),
   .in(in),
   .out(ram_out),
@@ -35,7 +37,7 @@ RAM ram (
 
 Screen screen (
   .clk(clk),
-  .vram_load(screen_select && load),
+  .vram_load(screen_select_0 && load),
   .vram_addr(address[12:0]),
   .vram_din(in),
   .vram_busy(busy),
@@ -52,5 +54,10 @@ Keyboard keyboard (
   .buttons(kbd_buttons),
   .out(kbd_out),
 );
+
+always @(posedge clk) begin
+  ram_select_1 <= ram_select_0;
+  screen_select_1 <= screen_select_0;
+end
 
 endmodule

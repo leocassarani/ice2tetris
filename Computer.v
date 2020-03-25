@@ -16,7 +16,7 @@ wire rom_ready;
 wire [15:0] rom_address;
 wire [15:0] instruction;
 wire [15:0] mem_address, mem_rdata, mem_wdata;
-wire mem_busy, mem_write;
+wire mem_busy, mem_load;
 
 wire reset = !rom_ready || !BTN_N;
 assign LEDG_N = !rom_ready;
@@ -35,14 +35,14 @@ CPU cpu (
   .mem_busy(mem_busy),
   .mem_rdata(mem_rdata),
   .mem_wdata(mem_wdata),
-  .mem_write(mem_write),
+  .mem_load(mem_load),
   .mem_address(mem_address),
 );
 
 Memory memory (
   .clk(clk_out),
   .address(mem_address),
-  .load(mem_write),
+  .load(mem_load),
   .in(mem_wdata),
   .out(mem_rdata),
   .busy(mem_busy),
