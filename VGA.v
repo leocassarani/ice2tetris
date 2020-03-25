@@ -5,7 +5,7 @@ module VGA (
 
   input [15:0] vram_rdata,
   output [12:0] vram_raddr,
-  output reg vram_rden,
+  output vram_rden,
 
   output h_sync, v_sync,
   output [3:0] red, green, blue,
@@ -35,7 +35,7 @@ wire [9:0] y = v_display ? v_count - V_BLANK : 0; // range: 0-255
 reg [15:0] pixel_word;
 reg pixel;
 
-// In 640x480 @ 60Hz, both H- and V- sync signals have negative polarity.
+// In 640x480 @ 60Hz, both H- and V-sync signals have negative polarity.
 assign h_sync = !h_sync_pulse;
 assign v_sync = !v_sync_pulse;
 
@@ -49,6 +49,13 @@ reg [6:0] vram_offset = 0;
 wire [12:0] vram_line = 32 * y;
 assign vram_raddr = vram_line + vram_offset;
 
+// Reading from VRAM takes 3 cycles, so during the active rendering phase, we
+// want to request a read whenever there are 3 pixels left in the current
+// 16-bit word, i.e. when the x value modulo 16 = 13. In addition, while we're
+// in the horizontal back porch, we need to ask for the first pixel word
+// 3 cycles ahead of hitting the visible area (as long as v_display is high).
+assign vram_rden = (display && x[3:0] == 13 && x != WIDTH - 3) || (v_display && h_count == H_MIN - 3);
+
 always @(posedge clk) begin
   if (display) begin
     // Negate the pixel value so that 1 = black, 0 = white.
@@ -58,23 +65,15 @@ always @(posedge clk) begin
       4'b0000: begin
         pixel_word <= vram_rdata;
         pixel <= ~vram_rdata[0];
-        vram_rden <= 0;
       end
 
       4'b1100: begin
         vram_offset <= vram_offset + 1;
-        vram_rden <= 1;
       end
     endcase
   end else begin
     pixel <= 0;
     vram_offset <= 0;
-
-    if (v_display && h_count >= H_MIN - 4 && h_count < H_MIN) begin
-      vram_rden <= 1;
-    end else begin
-      vram_rden <= 0;
-    end
   end
 
   if (h_end && v_end) begin
