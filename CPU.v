@@ -19,7 +19,7 @@ assign mem_address = a_reg;
 assign mem_load = state == write_back && d3;
 assign mem_wdata = alu_out;
 
-wire fast_path = !mem_address[14] || mem_address[13];
+wire fast_mem = !mem_address[14] || mem_address[13];
 
 wire i = instruction[15];
 wire a = instruction[12];
@@ -38,13 +38,13 @@ wire alu_pos = !(alu_neg || alu_zero);
 
 wire jump = (j1 && alu_neg) || (j2 && alu_zero) || (j3 && alu_pos);
 
-localparam [2:0] inst_fetch  = 3'd0,
-                 inst_decode = 3'd1,
-                 mem_wait    = 3'd2,
-                 mem_read    = 3'd3,
-                 write_back  = 3'd4,
-                 mem_write   = 3'd5,
-                 mem_wait_1  = 3'd6;
+localparam [2:0] mem_fetch       = 3'd0,
+                 inst_fetch      = 3'd1,
+                 inst_decode     = 3'd2,
+                 write_back      = 3'd3,
+                 mem_read        = 3'd4,
+                 mem_slow_read_1 = 3'd5,
+                 mem_slow_read_2 = 3'd6;
 
 reg [2:0] state = inst_fetch;
 
@@ -70,8 +70,12 @@ always @(posedge clk) begin
     state <= inst_fetch;
   end else begin
     case (state)
-      inst_fetch: begin
+      mem_fetch: begin
         memory <= mem_rdata;
+        state <= inst_decode;
+      end
+
+      inst_fetch: begin
         state <= inst_decode;
       end
 
@@ -89,7 +93,10 @@ always @(posedge clk) begin
       end
 
       write_back: begin
-        if (!d3 || fast_path || !mem_busy) begin
+        // If we don't need to write to memory (!d3), or if we're dealing with
+        // non-VRAM memory (fast_mem), or if we're writing to VRAM but the
+        // coast is clear (!mem_busy), then we are ready to execute the rest.
+        if (!d3 || fast_mem || !mem_busy) begin
           if (d1) begin // Write to A register?
             a_reg <= alu_out;
           end
@@ -98,30 +105,37 @@ always @(posedge clk) begin
             d_reg <= alu_out;
           end
 
+          if (d3) begin
+            memory <= alu_out;
+          end
+
           if (jump) begin
             prog_counter <= a_reg;
           end else begin
             prog_counter <= prog_counter + 1;
           end
 
-          state <= mem_read;
+          // If we've changed the memory address that we're accessing (d1),
+          // then we need to fetch the new data from memory before moving on
+          // to the next instruction.
+          state <= d1 ? mem_read : inst_fetch;
         end
       end
 
       mem_read: begin
-        if (fast_path) begin
-          state <= inst_fetch;
+        if (fast_mem) begin
+          state <= mem_fetch;
         end else if (!mem_busy) begin
-          state <= mem_wait;
+          state <= mem_slow_read_1;
         end
       end
 
-      mem_wait: begin
-        state <= mem_wait_1;
+      mem_slow_read_1: begin
+        state <= mem_slow_read_2;
       end
 
-      mem_wait_1: begin
-        state <= inst_fetch;
+      mem_slow_read_2: begin
+        state <= mem_fetch;
       end
     endcase
   end
