@@ -30,11 +30,8 @@ wire i = instruction[15];
 wire a = instruction[12];
 
 reg c1, c2, c3, c4, c5, c6;
-wire d1, d2, d3;
-wire j1, j2, j3;
-
-assign { d1, d2, d3 } = instruction[5:3];
-assign { j1, j2, j3 } = instruction[2:0];
+reg d1, d2, d3;
+reg j1, j2, j3;
 
 reg [15:0] alu_x, alu_y;
 wire [15:0] alu_out;
@@ -82,14 +79,27 @@ always @(posedge clk) begin
       inst_decode: begin
         if (i) begin // C-instruction
           { c1, c2, c3, c4, c5, c6 } <= instruction[11:6];
+          { d1, d2, d3 } <= instruction[5:3];
+          { j1, j2, j3 } <= instruction[2:0];
+
           alu_x <= d_reg;
           alu_y <= a ? memory : a_reg;
+
           state <= write_back;
         end else begin // A-instruction
           a_reg <= instruction;
-          prog_counter <= prog_counter + 1;
           state <= mem_read;
         end
+
+        // Speculatively increment the program counter so we can fetch the
+        // next instruction before the current one has finished executing.
+        // Most of the time, we're going to be executing one instruction after
+        // another, so this approach will save us an extra inst_fetch cycle
+        // and enable us to go straight to inst_decode. If, on the other hand,
+        // we are executing an instruction that ends up jumping to a different
+        // ROM address, we'll simply overwrite the speculative program counter
+        // and wait an extra cycle, with no overall loss in performance.
+        prog_counter <= prog_counter + 1;
       end
 
       write_back: begin
@@ -113,14 +123,23 @@ always @(posedge clk) begin
 
           if (jump) begin
             prog_counter <= a_reg;
-          end else begin
-            prog_counter <= prog_counter + 1;
           end
 
-          // If we've changed the memory address that we're accessing (d1),
-          // then we need to fetch the new data from memory before moving on
-          // to the next instruction.
-          state <= d1 ? mem_read : inst_fetch;
+          if (d1) begin
+            // If we've changed the memory address that we're accessing (d1),
+            // then we need to fetch the new data from memory before moving on
+            // to the next instruction.
+            state <= mem_read;
+          end else begin
+            // If we are jumping to a different part of the program, then we
+            // need to wait an extra cycle in the inst_fetch state in order to
+            // give the ROM time to fetch that instruction. Conversely, if
+            // there is no jump, then the instruction has already been fetched
+            // thanks to the speculative increment in the inst_decode state,
+            // so we can start executing it on the next cycle by going right
+            // back to inst_decode.
+            state <= jump ? inst_fetch : inst_decode;
+          end
         end
       end
 
