@@ -13,7 +13,8 @@ module rom (
 
 reg [15:0] ram_waddr = 0;
 
-wire loading = ram_waddr < 16'h8000; // Read the first 32K addresses
+// Read a total of 64KiB from flash, i.e. the first 32Ki 16-bit addresses.
+wire loading = ram_waddr < 16'h8000;
 assign ready = !loading;
 
 wire ram_select_0 = loading ? ram_waddr[14] : address[14];
@@ -31,7 +32,6 @@ assign instruction = loading ? 16'b0 : (ram_select_1 ? ram_data_hi : ram_data_lo
 wire flash_ready;
 wire ram_write = clken && loading && flash_ready;
 
-wire [23:0] flash_addr = 24'h100000 + { ram_waddr, 1'b0 }; // 1024KB + (addr << 1)
 wire [15:0] flash_data;
 
 SB_SPRAM256KA spram_lo (
@@ -64,7 +64,7 @@ spi_flash_mem flash (
   .clk(clk),
   .clken(clken && loading),
 
-  .raddr(flash_addr),
+  .raddr(24'h100000), // Start at 1024KiB.
   .rdata(flash_data),
   .ready(flash_ready),
 
@@ -91,70 +91,73 @@ module spi_flash_mem (
   output reg ready,
   output reg [15:0] rdata,
 
-  output reg spi_cs, spi_sclk, spi_mosi,
-  input spi_miso
+  input spi_miso,
+  output reg spi_cs, spi_sclk, spi_mosi
 );
 
-reg [7:0] buffer;
-reg [3:0] xfer_cnt;
-reg [2:0] state;
+reg [15:0] buffer;
+reg [4:0] count;
+reg [1:0] state;
 
 always @(posedge clk) begin
   ready <= 0;
 
-  if (!clken || ready) begin
+  if (!clken) begin
     spi_cs <= 1;
     spi_sclk <= 1;
-    xfer_cnt <= 0;
+    count <= 0;
     state <= 0;
   end else begin
     spi_cs <= 0;
 
-    if (xfer_cnt) begin
-      if (spi_sclk) begin
-        spi_sclk <= 0;
-        spi_mosi <= buffer[7];
-      end else begin
-        spi_sclk <= 1;
-        buffer <= { buffer, spi_miso };
-        xfer_cnt <= xfer_cnt - 1;
-      end
-    end else begin
+    if (count == 0) begin
+      // Whenever we run out of bits to read or write, we need to reset the
+      // count and fill up the buffer again.
+      count <= 16;
+
       case (state)
         0: begin
-          buffer <= 'h03; // READ instruction
-          xfer_cnt <= 8;
+          // Issue a Read Data (0x03) instruction, followed by the 8 MSB of
+          // the 24-bit memory address we want to start reading from.
+          buffer <= { 8'h03, raddr[23:16] };
           state <= 1;
         end
+
         1: begin
-          buffer <= raddr[23:16];
-          xfer_cnt <= 8;
+          // Write the remaining 16 bits of the memory address.
+          buffer <= raddr[15:0];
           state <= 2;
         end
+
         2: begin
-          buffer <= raddr[15:8];
-          xfer_cnt <= 8;
+          // Fill the buffer with a 16-bit word, before moving on to the next
+          // state, where we'll latch it into rdata.
           state <= 3;
         end
+
         3: begin
-          buffer <= raddr[7:0];
-          xfer_cnt <= 8;
-          state <= 4;
-        end
-        4: begin
-          xfer_cnt <= 8;
-          state <= 5;
-        end
-        5: begin
-          rdata[15:8] <= buffer; // Big-endian
-          xfer_cnt <= 8;
-          state <= 6;
-        end
-        6: begin
-          rdata[7:0] <= buffer;
+          // We've now read a 16-bit word so we can signal that it's ready to
+          // be consumed. After the first read operation, we'll keep streaming
+          // the rest of the flash memory, 16 bits at a time, until we're
+          // stopped by the clken signal going low.
+          rdata[15:0] <= buffer;
           ready <= 1;
         end
       endcase
+    end else begin
+      // Flip the clock signal every cycle to simulate a half-speed clock.
+      spi_sclk <= ~spi_sclk;
+
+      if (spi_sclk) begin
+        // On the rising edge of the SPI clock, write the MSB of the buffer to
+        // the flash SPI interface.
+        spi_mosi <= buffer[15];
+      end else begin
+        // On the falling edge, read a bit from the SPI device and shift it
+        // into the LSB of the buffer.
+        buffer <= { buffer[14:0], spi_miso };
+        count <= count - 1;
+      end
     end
   end
 end
