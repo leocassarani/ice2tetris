@@ -13,7 +13,6 @@ module CPU (
 
 reg [15:0] a_reg;
 reg [15:0] d_reg;
-reg [15:0] memory;
 
 assign mem_address = a_reg;
 assign mem_load = state == write_back && d3;
@@ -42,9 +41,9 @@ wire jump = (j1 && alu_neg) || (j2 && alu_zero) || (j3 && alu_pos);
 
 localparam [2:0] inst_fetch  = 3'd0,
                  inst_decode = 3'd1,
-                 write_back  = 3'd2,
-                 mem_read    = 3'd3,
-                 mem_fetch   = 3'd4;
+                 mem_read    = 3'd2,
+                 mem_fetch   = 3'd3,
+                 write_back  = 3'd4;
 
 reg [2:0] state = inst_fetch;
 
@@ -66,7 +65,6 @@ always @(posedge clk) begin
   if (reset) begin
     a_reg <= 0;
     d_reg <= 0;
-    memory <= 0;
     mem_wait <= 0;
     prog_counter <= 0;
     state <= inst_fetch;
@@ -83,12 +81,16 @@ always @(posedge clk) begin
           { j1, j2, j3 } <= instruction[2:0];
 
           alu_x <= d_reg;
-          alu_y <= a ? memory : a_reg;
 
-          state <= write_back;
+          if (a) begin
+            state <= mem_read;
+          end else begin
+            alu_y <= a_reg;
+            state <= write_back;
+          end
         end else begin // A-instruction
           a_reg <= instruction;
-          state <= mem_read;
+          state <= inst_fetch;
         end
 
         // Speculatively increment the program counter so we can fetch the
@@ -100,47 +102,6 @@ always @(posedge clk) begin
         // ROM address, we'll simply overwrite the speculative program counter
         // and wait an extra cycle, with no overall loss in performance.
         prog_counter <= prog_counter + 1;
-      end
-
-      write_back: begin
-        // We are ready to execute the logic in this state if one of the
-        // following is true: we are not writing the ALU output back to memory
-        // (!d3); or we are writing to non-VRAM memory, to which we have fast,
-        // exclusive access (fast_mem); or we are writing to VRAM, and no one
-        // else is currently reading from it (!mem_busy).
-        if (!d3 || fast_mem || !mem_busy) begin
-          if (d1) begin // Write to A register?
-            a_reg <= alu_out;
-          end
-
-          if (d2) begin // Write to D register?
-            d_reg <= alu_out;
-          end
-
-          if (d3) begin // Write to Memory[A]?
-            memory <= alu_out;
-          end
-
-          if (jump) begin
-            prog_counter <= a_reg;
-          end
-
-          if (d1) begin
-            // If we've changed the memory address that we're accessing (d1),
-            // then we need to fetch the new data from memory before moving on
-            // to the next instruction.
-            state <= mem_read;
-          end else begin
-            // If we are jumping to a different part of the program, then we
-            // need to wait an extra cycle in the inst_fetch state in order to
-            // give the ROM time to fetch that instruction. Conversely, if
-            // there is no jump, then the instruction has already been fetched
-            // thanks to the speculative increment in the inst_decode state,
-            // so we can start executing it on the next cycle by going right
-            // back to inst_decode.
-            state <= jump ? inst_fetch : inst_decode;
-          end
-        end
       end
 
       mem_read: begin
@@ -159,12 +120,38 @@ always @(posedge clk) begin
 
       mem_fetch: begin
         mem_wait <= 0;
-        memory <= mem_rdata;
+        alu_y <= mem_rdata;
+        state <= write_back;
+      end
 
-        // If we have got this far, then there's no need to wait a further
-        // cycle to fetch the next instruction from ROM, so instead of jumping
-        // back to inst_fetch, we can go straight into the inst_decode stage.
-        state <= inst_decode;
+      write_back: begin
+        // We are ready to execute the logic in this state if one of the
+        // following is true: we are not writing the ALU output back to memory
+        // (!d3); or we are writing to non-VRAM memory, to which we have fast,
+        // exclusive access (fast_mem); or we are writing to VRAM, and no one
+        // else is currently reading from it (!mem_busy).
+        if (!d3 || fast_mem || !mem_busy) begin
+          if (d1) begin // Write to A register?
+            a_reg <= alu_out;
+          end
+
+          if (d2) begin // Write to D register?
+            d_reg <= alu_out;
+          end
+
+          if (jump) begin
+            prog_counter <= a_reg;
+          end
+
+          // If we are jumping to a different part of the program, then we
+          // need to wait an extra cycle in the inst_fetch state in order to
+          // give the ROM time to fetch that instruction. Conversely, if
+          // there is no jump, then the instruction has already been fetched
+          // thanks to the speculative increment in the inst_decode state,
+          // so we can start executing it on the next cycle by going right
+          // back to inst_decode.
+          state <= jump ? inst_fetch : inst_decode;
+        end
       end
     endcase
   end
