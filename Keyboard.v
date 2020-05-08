@@ -1,7 +1,6 @@
 module Keyboard (
   input clk,
   inout ps2_clk, ps2_data,
-  input btn1,
   output idle_out,
   output reg caps_lock,
   output [7:0] key_press,
