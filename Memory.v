@@ -8,7 +8,7 @@ module Memory (
 
   input vga_h_sync, vga_v_sync,
   input [3:0] vga_red, vga_green, vga_blue,
-  input [2:0] kbd_buttons,
+  inout ps2_clk, ps2_data,
 
   output busy,
   output [15:0] out,
@@ -55,7 +55,8 @@ Screen screen (
 
 Keyboard keyboard (
   .clk(clk),
-  .buttons(kbd_buttons),
+  .ps2_clk(ps2_clk),
+  .ps2_data(ps2_data),
   .out(kbd_out),
 );
 
