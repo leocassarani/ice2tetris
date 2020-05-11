@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module Screen (
   input clk,
@@ -7,11 +8,11 @@ module Screen (
   input [12:0] vram_addr,
   input [15:0] vram_din,
 
-  input vga_h_sync, vga_v_sync,
-  input [3:0] vga_red, vga_green, vga_blue,
-
   output vram_busy,
   output [15:0] vram_dout,
+
+  output vga_h_sync, vga_v_sync,
+  output [3:0] vga_red, vga_green, vga_blue
 );
 
 wire vram_p_read;
@@ -27,7 +28,7 @@ VGA vga (
   .v_sync(vga_v_sync),
   .red(vga_red),
   .green(vga_green),
-  .blue(vga_blue),
+  .blue(vga_blue)
 );
 
 VRAM vram (
@@ -39,7 +40,7 @@ VRAM vram (
   .s_write(vram_load),
   .s_din(vram_din),
   .s_dout(vram_dout),
-  .s_busy(vram_busy),
+  .s_busy(vram_busy)
 );
 
 endmodule

@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module ROM (
   input clk, clken,
@@ -7,7 +8,7 @@ module ROM (
   output ready,
 
   input spi_miso,
-  output spi_cs, output spi_sclk, output spi_mosi,
+  output spi_cs, output spi_sclk, output spi_mosi
 );
 
 reg [15:0] ram_waddr = 0;
@@ -43,7 +44,7 @@ SB_SPRAM256KA spram_lo (
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
-  .DATAOUT(ram_data_lo),
+  .DATAOUT(ram_data_lo)
 );
 
 SB_SPRAM256KA spram_hi (
@@ -56,7 +57,7 @@ SB_SPRAM256KA spram_hi (
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
-  .DATAOUT(ram_data_hi),
+  .DATAOUT(ram_data_hi)
 );
 
 spi_flash_mem flash (
@@ -70,7 +71,7 @@ spi_flash_mem flash (
   .spi_cs(spi_cs),
   .spi_sclk(spi_sclk),
   .spi_mosi(spi_mosi),
-  .spi_miso(spi_miso),
+  .spi_miso(spi_miso)
 );
 
 always @(posedge clk) begin
@@ -91,7 +92,7 @@ module spi_flash_mem (
   output reg [15:0] rdata,
 
   input spi_miso,
-  output reg spi_cs, spi_sclk, spi_mosi,
+  output reg spi_cs, spi_sclk, spi_mosi
 );
 
 reg [15:0] buffer;

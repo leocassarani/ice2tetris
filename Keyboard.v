@@ -1,9 +1,10 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module Keyboard (
   input clk,
   inout ps2_clk, ps2_data,
-  output [15:0] out,
+  output [15:0] out
 );
 
 localparam [7:0] LEFT_SHIFT   = 8'h12,
@@ -46,7 +47,7 @@ ps2_device ps2 (
   .tx_data(tx_data),
   .read(ps2_read),
   .rx_data(rx_data),
-  .busy(ps2_busy),
+  .busy(ps2_busy)
 );
 
 always @(posedge clk) begin
@@ -248,7 +249,7 @@ module ps2_device (
   input [7:0] tx_data,
   output reg read,
   output reg [7:0] rx_data,
-  output busy,
+  output busy
 );
 
 localparam [0:255] PARITY = {
@@ -335,7 +336,7 @@ SB_IO #(
   .OUTPUT_CLK(clk),
   .OUTPUT_ENABLE(ps2_clk_output_enable),
   .D_IN_0(ps2_clk_rx),
-  .D_OUT_0(ps2_clk_tx),
+  .D_OUT_0(ps2_clk_tx)
 );
 
 (* PULLUP_RESISTOR = "10K" *)
@@ -348,7 +349,7 @@ SB_IO #(
   .OUTPUT_CLK(clk),
   .OUTPUT_ENABLE(ps2_data_output_enable),
   .D_IN_0(ps2_data_rx),
-  .D_OUT_0(ps2_data_tx),
+  .D_OUT_0(ps2_data_tx)
 );
 
 delay #(
@@ -356,7 +357,7 @@ delay #(
 ) delay_100us (
   .clk(clk),
   .enable(delay_100us_enable),
-  .done(delay_100us_done),
+  .done(delay_100us_done)
 );
 
 delay #(
@@ -364,7 +365,7 @@ delay #(
 ) delay_20us (
   .clk(clk),
   .enable(delay_20us_enable),
-  .done(delay_20us_done),
+  .done(delay_20us_done)
 );
 
 delay #(
@@ -372,7 +373,7 @@ delay #(
 ) delay_63clks (
   .clk(clk),
   .enable(delay_63clks_enable),
-  .done(delay_63clks_done),
+  .done(delay_63clks_done)
 );
 
 always @(posedge clk) begin
@@ -507,15 +508,15 @@ end
 endmodule
 
 module delay #(
-  parameter DURATION = 0,
+  parameter DURATION = 0
 ) (
   input clk,
   input enable,
-  output done,
+  output done
 );
 
 // Add 1 to ensure we maintain an upper bound if DURATION is a power of 2.
-localparam BIT_LENGTH = $clog2(DURATION) + 1;
+parameter BIT_LENGTH = $clog2(DURATION) + 1;
 
 reg [(BIT_LENGTH - 1):0] count;
 assign done = count == DURATION;

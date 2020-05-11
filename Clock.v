@@ -1,9 +1,10 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module Clock (
   input refclk,
   output locked,
-  output out,
+  output out
 );
 
 SB_PLL40_PAD #(
@@ -17,7 +18,7 @@ SB_PLL40_PAD #(
   .BYPASS(1'b0),
   .LOCK(locked),
   .PACKAGEPIN(refclk),
-  .PLLOUTGLOBAL(out),
+  .PLLOUTGLOBAL(out)
 );
 
 endmodule

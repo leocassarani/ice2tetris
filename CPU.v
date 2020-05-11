@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module CPU (
   input clk, reset,
@@ -8,7 +9,7 @@ module CPU (
   output mem_load,
   output [15:0] mem_address,
   output [15:0] mem_wdata,
-  output reg [15:0] prog_counter,
+  output reg [15:0] prog_counter
 );
 
 reg [15:0] a_reg;
@@ -58,7 +59,7 @@ ALU alu (
   .no(c6),
   .out(alu_out),
   .zero(alu_zero),
-  .neg(alu_neg),
+  .neg(alu_neg)
 );
 
 always @(posedge clk) begin

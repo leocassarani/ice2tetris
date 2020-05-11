@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module VGA (
   input clk,
@@ -8,7 +9,7 @@ module VGA (
   output vram_rden,
 
   output h_sync, v_sync,
-  output [3:0] red, green, blue,
+  output [3:0] red, green, blue
 );
 
 localparam [9:0] WIDTH = 512;

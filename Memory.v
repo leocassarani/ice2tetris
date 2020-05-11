@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module Memory (
   input clk,
@@ -6,12 +7,13 @@ module Memory (
   input [15:0] address,
   input [15:0] in,
 
-  input vga_h_sync, vga_v_sync,
-  input [3:0] vga_red, vga_green, vga_blue,
+  output vga_h_sync, vga_v_sync,
+  output [3:0] vga_red, vga_green, vga_blue,
+
   inout ps2_clk, ps2_data,
 
   output busy,
-  output [15:0] out,
+  output [15:0] out
 );
 
 wire [15:0] ram_out, screen_out, kbd_out;
@@ -36,7 +38,7 @@ RAM ram (
   .load(ram_select_0 && load),
   .address(address[13:0]),
   .in(in),
-  .out(ram_out),
+  .out(ram_out)
 );
 
 Screen screen (
@@ -50,14 +52,14 @@ Screen screen (
   .vga_v_sync(vga_v_sync),
   .vga_red(vga_red),
   .vga_green(vga_green),
-  .vga_blue(vga_blue),
+  .vga_blue(vga_blue)
 );
 
 Keyboard keyboard (
   .clk(clk),
   .ps2_clk(ps2_clk),
   .ps2_data(ps2_data),
-  .out(kbd_out),
+  .out(kbd_out)
 );
 
 always @(posedge clk) begin

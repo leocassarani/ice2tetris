@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ps / 1ps
 
 module VRAM (
   input clk,
@@ -12,7 +13,7 @@ module VRAM (
 
   output s_busy,
   output reg [15:0] p_dout,
-  output reg [15:0] s_dout,
+  output reg [15:0] s_dout
 );
 
 assign s_busy = p_read;
@@ -34,7 +35,7 @@ SB_SPRAM256KA ram (
   .STANDBY(1'b0),
   .SLEEP(1'b0),
   .POWEROFF(1'b1),
-  .DATAOUT(ram_dout),
+  .DATAOUT(ram_dout)
 );
 
 always @(posedge clk) begin
