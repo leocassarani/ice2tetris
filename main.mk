@@ -15,8 +15,8 @@ all: $(PROJ).rpt $(PROJ).bin
 %.rpt: %.asc
 	icetime -d $(DEVICE) -mtr $@ $<
 
-%_tb: %_tb.v %.v
-	iverilog -o $@ $^
+%_tb: %_tb.v %.v $(ADD_SRC)
+	iverilog -o $@ $^ `yosys-config --datdir/ice40/cells_sim.v`
 
 %_tb.vcd: %_tb
 	vvp -N $< +vcd=$@
@@ -37,4 +37,5 @@ clean:
 	rm -f $(PROJ).blif $(PROJ).asc $(PROJ).rpt $(PROJ).bin $(PROJ).json $(PROJ).log $(ADD_CLEAN)
 
 .SECONDARY:
+.DELETE_ON_ERROR:
 .PHONY: all prog clean

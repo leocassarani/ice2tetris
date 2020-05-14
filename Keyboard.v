@@ -1,11 +1,13 @@
 `default_nettype none
-`timescale 1ps / 1ps
+`timescale 1ns / 1ps
 
 module Keyboard (
   input clk,
   inout ps2_clk, ps2_data,
   output [15:0] out
 );
+
+`ifdef SYNTHESIS
 
 localparam [7:0] LEFT_SHIFT   = 8'h12,
                  CAPS_LOCK    = 8'h58,
@@ -530,5 +532,11 @@ always @(posedge clk) begin
     count <= 0;
   end
 end
+
+`else
+
+assign out = 0;
+
+`endif
 
 endmodule

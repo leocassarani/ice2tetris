@@ -1,5 +1,5 @@
 `default_nettype none
-`timescale 1ps / 1ps
+`timescale 1ns / 1ps
 
 module Computer (
   input CLK,
@@ -11,6 +11,9 @@ module Computer (
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8,
   output FLASH_SCK, FLASH_SSB, FLASH_IO0
 );
+
+// Read a total of 64KiB from flash, i.e. the first 32Ki 16-bit addresses.
+parameter ROM_SIZE = 16'h8000;
 
 wire clk_out, clk_locked;
 wire rom_ready;
@@ -59,7 +62,9 @@ Memory memory (
   .ps2_data(P2_1)
 );
 
-ROM rom (
+ROM #(
+  .SIZE(ROM_SIZE)
+) rom (
   .clk(clk_out),
   .clken(clk_locked),
   .ready(rom_ready),

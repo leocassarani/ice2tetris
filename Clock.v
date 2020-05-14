@@ -1,11 +1,13 @@
 `default_nettype none
-`timescale 1ps / 1ps
+`timescale 1ns / 1ps
 
 module Clock (
   input refclk,
   output locked,
   output out
 );
+
+`ifdef SYNTHESIS
 
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
@@ -20,5 +22,12 @@ SB_PLL40_PAD #(
   .PACKAGEPIN(refclk),
   .PLLOUTGLOBAL(out)
 );
+
+`else
+
+assign locked = 1'b1;
+assign out = refclk;
+
+`endif
 
 endmodule

@@ -1,5 +1,5 @@
 `default_nettype none
-`timescale 1ps / 1ps
+`timescale 1ns / 1ps
 
 module Screen (
   input clk,
