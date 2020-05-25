@@ -39,6 +39,12 @@ wire alu_pos = !(alu_neg || alu_zero);
 
 wire jump = (j1 && alu_neg) || (j2 && alu_zero) || (j3 && alu_pos);
 
+// An unconditional jump (goto) instruction is characterised by j1, j2, j3
+// being all high and d1, d2, d3 being all low. This means that we can skip
+// the ALU entirely and go straight from decoding the instruction to fetching
+// the one at the jump target address.
+wire goto = ~|instruction[5:3] && &instruction[2:0];
+
 localparam [2:0] inst_fetch  = 3'd0,
                  inst_decode = 3'd1,
                  mem_read    = 3'd2,
@@ -80,28 +86,39 @@ always @(posedge clk) begin
           { d1, d2, d3 } <= instruction[5:3];
           { j1, j2, j3 } <= instruction[2:0];
 
-          alu_x <= d_reg;
-
-          if (a) begin
-            state <= mem_read;
+          if (goto) begin
+            // If we're executing an unconditional jump, set the program
+            // counter and skip straight to fetching the next instruction.
+            state <= inst_fetch;
+            prog_counter <= a_reg;
           end else begin
-            alu_y <= a_reg;
-            state <= write_back;
+            alu_x <= d_reg;
+
+            if (a) begin
+              state <= mem_read;
+            end else begin
+              alu_y <= a_reg;
+              state <= write_back;
+            end
+
+            // Speculatively increment the program counter so we can fetch the
+            // next instruction before the current one has finished executing.
+            // Most of the time, we're going to be executing one instruction after
+            // another, so this approach will save us an extra inst_fetch cycle
+            // and enable us to go straight to inst_decode. If, on the other hand,
+            // we are executing an instruction that ends up jumping to a different
+            // ROM address, we'll simply overwrite the speculative program counter
+            // and wait an extra cycle, with no overall loss in performance.
+            prog_counter <= prog_counter + 1;
           end
         end else begin // A-instruction
           a_reg <= instruction;
           state <= inst_fetch;
-        end
 
-        // Speculatively increment the program counter so we can fetch the
-        // next instruction before the current one has finished executing.
-        // Most of the time, we're going to be executing one instruction after
-        // another, so this approach will save us an extra inst_fetch cycle
-        // and enable us to go straight to inst_decode. If, on the other hand,
-        // we are executing an instruction that ends up jumping to a different
-        // ROM address, we'll simply overwrite the speculative program counter
-        // and wait an extra cycle, with no overall loss in performance.
-        prog_counter <= prog_counter + 1;
+          // An A-instruction can't jump, so we always want to increment the
+          // program counter.
+          prog_counter <= prog_counter + 1;
+        end
       end
 
       mem_read: begin
