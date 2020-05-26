@@ -11,10 +11,12 @@ module rom (
   output spi_cs, output spi_sclk, output spi_mosi
 );
 
+parameter SIZE = 16'h8000;
+
 reg [15:0] ram_waddr = 0;
 
 // Read a total of 64KiB from flash, i.e. the first 32Ki 16-bit addresses.
-wire loading = ram_waddr < 16'h8000;
+wire loading = ram_waddr < SIZE;
 assign ready = !loading;
 
 wire ram_select_0 = loading ? ram_waddr[14] : address[14];
@@ -95,9 +97,11 @@ module spi_flash_mem (
   output reg spi_cs, spi_sclk, spi_mosi
 );
 
-reg [15:0] buffer;
-reg [4:0] count;
-reg [1:0] state;
+reg [15:0] buffer = 0;
+reg [4:0] count = 0;
+reg [1:0] state = 0;
+
+initial spi_sclk = 0;
 
 always @(posedge clk) begin
   ready <= 0;

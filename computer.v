@@ -12,6 +12,8 @@ module computer (
   output FLASH_SCK, FLASH_SSB, FLASH_IO0
 );
 
+parameter ROM_SIZE = 16'h8000;
+
 wire clk_out, clk_locked;
 wire rom_ready;
 
@@ -59,7 +61,9 @@ memory memory (
   .ps2_data(P2_1)
 );
 
-rom rom (
+rom #(
+  .SIZE(ROM_SIZE)
+) rom (
   .clk(clk_out),
   .clken(clk_locked),
   .ready(rom_ready),

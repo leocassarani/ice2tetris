@@ -7,6 +7,8 @@ module clock (
   output out
 );
 
+`ifdef SYNTHESIS
+
 SB_PLL40_PAD #(
   .FEEDBACK_PATH("SIMPLE"),
   .DIVR(4'b0000),        // DIVR = 0
@@ -20,5 +22,12 @@ SB_PLL40_PAD #(
   .PACKAGEPIN(refclk),
   .PLLOUTGLOBAL(out)
 );
+
+`else
+
+assign locked = 1'b1;
+assign out = refclk;
+
+`endif
 
 endmodule

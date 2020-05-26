@@ -2,9 +2,12 @@
 *.bin
 *.blif
 *.blog
+*.hack
 *.json
 *.log
 *.nplog
 *.rpt
+*.vcd
 *.vlog
 *.yslog
+*_tb
