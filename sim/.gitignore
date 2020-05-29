@@ -1,0 +1,4 @@
+main_tb
+obj_dir
+*.hack
+*.vcd

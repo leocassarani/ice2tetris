@@ -1,10 +1,14 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
+`ifndef ROM_SIZE
+`define ROM_SIZE 16'h8000
+`endif
+
 module computer (
   input CLK,
   input BTN_N,
-  input FLASH_IO1,
+  inout FLASH_IO1,
   inout P2_1, P2_3,
   output LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
@@ -59,7 +63,9 @@ memory memory (
   .ps2_data(P2_1)
 );
 
-rom rom (
+rom #(
+  .SIZE(`ROM_SIZE)
+)rom (
   .clk(clk_out),
   .clken(clk_locked),
   .ready(rom_ready),

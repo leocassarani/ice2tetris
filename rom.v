@@ -7,14 +7,16 @@ module rom (
   output [15:0] instruction,
   output ready,
 
-  input spi_miso,
+  inout spi_miso,
   output spi_cs, output spi_sclk, output spi_mosi
 );
 
+// Read a total of 64KiB from flash, i.e. the first 32Ki 16-bit addresses.
+parameter [15:0] SIZE = 16'h8000;
+
 reg [15:0] ram_waddr = 0;
 
-// Read a total of 64KiB from flash, i.e. the first 32Ki 16-bit addresses.
-wire loading = ram_waddr < 16'h8000;
+wire loading = ram_waddr < SIZE;
 assign ready = !loading;
 
 wire ram_select_0 = loading ? ram_waddr[14] : address[14];
@@ -59,6 +61,19 @@ SB_SPRAM256KA spram_hi (
   .POWEROFF(1'b1),
   .DATAOUT(ram_data_hi)
 );
+
+`ifdef VERILATOR
+
+spi_flash_sim #(
+  .SIZE(SIZE)
+) flash_sim (
+  .spi_cs(spi_cs),
+  .spi_sclk(spi_sclk),
+  .spi_mosi(spi_mosi),
+  .spi_miso(spi_miso)
+);
+
+`endif
 
 spi_flash_mem flash (
   .clk(clk),
@@ -163,3 +178,49 @@ always @(posedge clk) begin
 end
 
 endmodule
+
+`ifdef VERILATOR
+
+module spi_flash_sim (
+  input spi_cs, spi_sclk, spi_mosi,
+  output reg spi_miso = 0
+);
+
+parameter [15:0] SIZE = 0;
+localparam IDXSIZE = $clog2(SIZE - 1) + 4;
+
+reg [15:0] rom [0:SIZE-1];
+reg [IDXSIZE-1:0] count = 0;
+
+localparam IDLE = 1'd0,
+           STREAM = 1'd1;
+
+reg state = IDLE;
+
+initial begin
+  $readmemb("program.hack", rom);
+end
+
+always @(posedge spi_sclk) begin
+  if (!spi_cs) begin
+    case (state)
+      IDLE: begin
+        if (count == 30) begin
+          count <= 0;
+          state <= STREAM;
+        end else begin
+          count <= count + 1;
+        end
+      end
+
+      STREAM: begin
+        spi_miso <= rom[count[IDXSIZE-1:4]][15 - count[3:0]];
+        count <= count + 1;
+      end
+    endcase
+  end
+end
+
+endmodule
+
+`endif

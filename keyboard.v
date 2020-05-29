@@ -7,6 +7,12 @@ module keyboard (
   output [15:0] out
 );
 
+`ifdef VERILATOR
+
+assign out = 16'b0;
+
+`else
+
 localparam [7:0] LEFT_SHIFT   = 8'h12,
                  CAPS_LOCK    = 8'h58,
                  RIGHT_SHIFT  = 8'h59,
@@ -239,6 +245,8 @@ function [7:0] ascii(input [15:0] key, input caps_lock, input shift);
     default: ascii = 8'h00; // No key press
   endcase
 endfunction
+
+`endif
 
 endmodule
 
