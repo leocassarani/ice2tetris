@@ -1,17 +1,18 @@
 #include <stdio.h>
 #include "vga.h"
 
-#define SCREEN_WIDTH  640
-#define SCREEN_HEIGHT 480
+const int ScreenWidth = 640;
+const int ScreenHeight = 480;
 
 VGA::VGA()
     : h_state(ScanlineState::FRONT_PORCH),
       v_state(ScanlineState::VISIBLE),
       dirty(false)
 {
-    pixels = new Uint8[3 * SCREEN_WIDTH * SCREEN_HEIGHT];
-    memset(pixels, 0xFF, 3 * SCREEN_WIDTH * SCREEN_HEIGHT);
+    pixels = new Uint8[3 * ScreenWidth * ScreenHeight];
+    memset(pixels, 0xFF, 3 * ScreenWidth * ScreenHeight);
     userEvent = SDL_RegisterEvents(1);
+    SDL_Init(SDL_INIT_VIDEO);
 }
 
 VGA::~VGA() {
@@ -23,11 +24,9 @@ VGA::~VGA() {
 }
 
 void VGA::Start() {
-    SDL_Init(SDL_INIT_VIDEO);
-
-    window = SDL_CreateWindow("VGA", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("VGA (640 x 480 @ 60MHz)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ScreenWidth, ScreenHeight, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, 0);
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STATIC, SCREEN_WIDTH, SCREEN_HEIGHT);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STATIC, ScreenWidth, ScreenHeight);
 
     SDL_Event e;
     bool exit = false;
@@ -38,11 +37,12 @@ void VGA::Start() {
         switch (e.type) {
             case SDL_QUIT:
                 exit = true;
+                printf("Quitting\n");
                 break;
         }
 
         if (e.type == userEvent) {
-            SDL_UpdateTexture(texture, NULL, pixels, 3 * SCREEN_WIDTH);
+            SDL_UpdateTexture(texture, NULL, pixels, 3 * ScreenWidth);
             SDL_RenderClear(renderer);
             SDL_RenderCopy(renderer, texture, NULL, NULL);
             SDL_RenderPresent(renderer);
@@ -109,12 +109,12 @@ void VGA::Tick(Uint8 hsync, Uint8 vsync, Uint8 red, Uint8 green, Uint8 blue) {
     }
 
     if (h_state == ScanlineState::VISIBLE && v_state == ScanlineState::VISIBLE) {
-        int i = 3 * (h_count + (v_count * SCREEN_WIDTH));
+        int i = 3 * (h_count + (v_count * ScreenWidth));
         pixels[i++] = red * 0xFF;
         pixels[i++] = green * 0xFF;
         pixels[i]   = blue * 0xFF;
         dirty = true;
-    } else if (dirty) {
+    } else if (dirty && v_state != ScanlineState::VISIBLE) {
         SDL_Event event = { .type = userEvent };
         SDL_PushEvent(&event);
         dirty = false;

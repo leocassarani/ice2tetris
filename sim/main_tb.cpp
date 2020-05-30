@@ -1,3 +1,5 @@
+#include <atomic>
+#include <functional>
 #include <iostream>
 #include <thread>
 #include "Vcomputer.h"
@@ -33,13 +35,18 @@ void tick(unsigned tickcount, Vcomputer *tb, VerilatedVcdC *tfp) {
     }
 }
 
-void loop(Vcomputer *tb, VerilatedVcdC *tfp, VGA *vga) {
+void loop(Vcomputer *tb, VerilatedVcdC *tfp, VGA *vga, std::atomic<bool>& exit) {
     unsigned tickcount = 0;
 
-    for (int i = 0; i < 1000000; i++) {
+    while (true) {
+        if (exit) {
+            break;
+        }
+
         tick(++tickcount, tb, tfp);
         vga->Tick(tb->P1B7, tb->P1B8, tb->P1A4, tb->P1B4, tb->P1A10);
     }
+
     printf("Done\n");
 }
 
@@ -57,11 +64,14 @@ int main(int argc, char **argv) {
     tb->trace(tfp, 99);
     tfp->open("computer.vcd");
 
-    std::thread th(&loop, tb, tfp, vga);
+    std::atomic<bool> exit(false);
+
+    std::thread th(&loop, tb, tfp, vga, std::ref(exit));
     th.detach();
 
     vga->Start();
-    delete vga;
+    exit = true;
 
+    delete vga;
     return 0;
 }
