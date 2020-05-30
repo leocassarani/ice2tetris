@@ -1,6 +1,7 @@
 #include <atomic>
 #include <functional>
 #include <iostream>
+#include <string>
 #include <thread>
 #include "Vcomputer.h"
 #include "verilated.h"
@@ -56,14 +57,19 @@ int main(int argc, char **argv) {
     Vcomputer *tb = new Vcomputer;
     tb->BTN_N = 1; // Reset button not pressed
 
-    Verilated::traceEverOn(true);
-    VerilatedVcdC *tfp = new VerilatedVcdC;
+    VerilatedVcdC *tfp = nullptr;
+
+    std::string flag(Verilated::commandArgsPlusMatch("trace"));
+    bool traceEnabled = flag == "+trace";
+
+    if (traceEnabled) {
+        Verilated::traceEverOn(true);
+        tfp = new VerilatedVcdC;
+        tb->trace(tfp, 99);
+        tfp->open("computer.vcd");
+    }
 
     VGA *vga = new VGA();
-
-    tb->trace(tfp, 99);
-    tfp->open("computer.vcd");
-
     std::atomic<bool> exit(false);
 
     std::thread th(&loop, tb, tfp, vga, std::ref(exit));
@@ -73,5 +79,8 @@ int main(int argc, char **argv) {
     exit = true;
 
     delete vga;
+    delete tb;
+    if (tfp) delete tfp;
+
     return 0;
 }
