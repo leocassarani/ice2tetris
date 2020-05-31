@@ -1,35 +1,45 @@
-#include <stdio.h>
 #include "vga.h"
 
 const int ScreenWidth = 640;
 const int ScreenHeight = 480;
 
 VGA::VGA()
-    : h_state(ScanlineState::FRONT_PORCH),
-      v_state(ScanlineState::VISIBLE),
-      dirty(false)
 {
-    pixels = new Uint8[3 * ScreenWidth * ScreenHeight];
-    memset(pixels, 0xFF, 3 * ScreenWidth * ScreenHeight);
-    userEvent = SDL_RegisterEvents(1);
-    SDL_Init(SDL_INIT_VIDEO);
+    pixels.assign(3 * ScreenWidth * ScreenHeight, 0xFF);
+    event_type = SDL_RegisterEvents(1);
 }
 
 VGA::~VGA() {
-    delete[] pixels;
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
-void VGA::Start() {
-    window = SDL_CreateWindow("VGA (640 x 480 @ 60MHz)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ScreenWidth, ScreenHeight, SDL_WINDOW_SHOWN);
-    renderer = SDL_CreateRenderer(window, -1, 0);
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STATIC, ScreenWidth, ScreenHeight);
+void VGA::run() {
+    SDL_Init(SDL_INIT_VIDEO);
 
-    SDL_Event e;
+    window = {
+        SDL_CreateWindow(
+            "VGA (640 x 480 @ 60MHz)",
+            SDL_WINDOWPOS_CENTERED,
+            SDL_WINDOWPOS_CENTERED,
+            ScreenWidth,
+            ScreenHeight,
+            SDL_WINDOW_SHOWN
+        ),
+        SDL_DestroyWindow
+    };
+
+    renderer = {
+        SDL_CreateRenderer(window.get(), -1, 0),
+        SDL_DestroyRenderer
+    };
+
+    texture = {
+        SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STATIC, ScreenWidth, ScreenHeight),
+        SDL_DestroyTexture
+    };
+
     bool exit = false;
+    SDL_Event e;
 
     while (!exit) {
         SDL_WaitEvent(&e);
@@ -37,85 +47,80 @@ void VGA::Start() {
         switch (e.type) {
             case SDL_QUIT:
                 exit = true;
-                printf("Quitting\n");
                 break;
         }
 
-        if (e.type == userEvent) {
-            SDL_UpdateTexture(texture, NULL, pixels, 3 * ScreenWidth);
-            SDL_RenderClear(renderer);
-            SDL_RenderCopy(renderer, texture, NULL, NULL);
-            SDL_RenderPresent(renderer);
+        if (e.type == event_type) {
+            SDL_UpdateTexture(texture.get(), NULL, pixels.data(), 3 * ScreenWidth);
+            SDL_RenderClear(renderer.get());
+            SDL_RenderCopy(renderer.get(), texture.get(), NULL, NULL);
+            SDL_RenderPresent(renderer.get());
         }
     }
 }
 
-void VGA::Tick(Uint8 hsync, Uint8 vsync, Uint8 red, Uint8 green, Uint8 blue) {
+void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t blue) {
     h_count++;
 
     switch (h_state) {
-        case ScanlineState::VISIBLE:
-            if (h_count == 640) {
-                h_state = ScanlineState::FRONT_PORCH;
-                h_count = 0;
+        case ScanlineState::Visible:
+            if (h_count == ScreenWidth) {
+                h_state = ScanlineState::FrontPorch;
                 v_count++;
             }
             break;
-        case ScanlineState::FRONT_PORCH:
+        case ScanlineState::FrontPorch:
             if (!hsync) {
-                h_state = ScanlineState::SYNC_PULSE;
-                h_count = 0;
+                h_state = ScanlineState::SyncPulse;
             }
             break;
-        case ScanlineState::SYNC_PULSE:
+        case ScanlineState::SyncPulse:
             if (hsync) {
-                h_state = ScanlineState::BACK_PORCH;
+                h_state = ScanlineState::BackPorch;
                 h_count = 0;
             }
             break;
-        case ScanlineState::BACK_PORCH:
+        case ScanlineState::BackPorch:
             if (h_count == 48) {
+                h_state = ScanlineState::Visible;
                 h_count = 0;
-                h_state = ScanlineState::VISIBLE;
             }
             break;
     }
 
     switch (v_state) {
-        case ScanlineState::VISIBLE:
-            if (v_count == 480) {
-                v_state = ScanlineState::FRONT_PORCH;
-                v_count = 0;
+        case ScanlineState::Visible:
+            if (v_count == ScreenHeight) {
+                v_state = ScanlineState::FrontPorch;
             }
             break;
-        case ScanlineState::FRONT_PORCH:
+        case ScanlineState::FrontPorch:
             if (!vsync) {
-                v_state = ScanlineState::SYNC_PULSE;
-                v_count = 0;
+                v_state = ScanlineState::SyncPulse;
             }
             break;
-        case ScanlineState::SYNC_PULSE:
+        case ScanlineState::SyncPulse:
             if (vsync) {
-                v_state = ScanlineState::BACK_PORCH;
+                v_state = ScanlineState::BackPorch;
                 v_count = 0;
             }
             break;
-        case ScanlineState::BACK_PORCH:
+        case ScanlineState::BackPorch:
             if (v_count == 33) {
-                v_state = ScanlineState::VISIBLE;
+                v_state = ScanlineState::Visible;
                 v_count = 0;
             }
             break;
     }
 
-    if (h_state == ScanlineState::VISIBLE && v_state == ScanlineState::VISIBLE) {
-        int i = 3 * (h_count + (v_count * ScreenWidth));
+    if (h_state == ScanlineState::Visible && v_state == ScanlineState::Visible) {
+        int i = 3 * (h_count + v_count * ScreenWidth);
         pixels[i++] = red * 0xFF;
         pixels[i++] = green * 0xFF;
         pixels[i]   = blue * 0xFF;
         dirty = true;
-    } else if (dirty && v_state != ScanlineState::VISIBLE) {
-        SDL_Event event = { .type = userEvent };
+    } else if (dirty && v_state != ScanlineState::Visible) {
+        SDL_Event event = { .type = event_type };
         SDL_PushEvent(&event);
         dirty = false;
     }

@@ -1,11 +1,17 @@
+#ifndef VGA_H
+#define VGA_H
+
+#include <memory>
+#include <vector>
 #include <SDL2/SDL.h>
-#include "verilated.h"
+
+using std::vector;
 
 enum class ScanlineState {
-    VISIBLE = 0,
-    FRONT_PORCH,
-    SYNC_PULSE,
-    BACK_PORCH,
+    Visible,
+    FrontPorch,
+    SyncPulse,
+    BackPorch,
 };
 
 class VGA {
@@ -13,18 +19,22 @@ class VGA {
         VGA();
         ~VGA();
 
-        void Start();
-        void Tick(Uint8 vsync, Uint8 hsync, Uint8 red, Uint8 green, Uint8 blue);
+        void run();
+        void tick(uint8_t vsync, uint8_t hsync, uint8_t red, uint8_t green, uint8_t blue);
 
     private:
-        Uint8 *pixels;
-        Uint32 userEvent;
+        vector<uint8_t> pixels;
+        uint32_t event_type;
 
-        ScanlineState h_state, v_state;
-        unsigned h_count, v_count;
-        bool dirty;
+        ScanlineState h_state = ScanlineState::FrontPorch;
+        ScanlineState v_state = ScanlineState::Visible;
 
-        SDL_Window *window;
-        SDL_Renderer *renderer;
-        SDL_Texture *texture;
+        unsigned h_count = 0, v_count = 0;
+        bool dirty = false;
+
+        std::unique_ptr<SDL_Window, void(*)(SDL_Window *)> window{nullptr, nullptr};
+        std::unique_ptr<SDL_Renderer, void(*)(SDL_Renderer *)> renderer{nullptr, nullptr};
+        std::unique_ptr<SDL_Texture, void(*)(SDL_Texture *)> texture{nullptr, nullptr};
 };
+
+#endif
