@@ -21,6 +21,7 @@ class VGA {
 
         void run();
         void tick(uint8_t vsync, uint8_t hsync, uint8_t red, uint8_t green, uint8_t blue);
+        uint8_t key_pressed();
 
     private:
         vector<uint8_t> pixels;

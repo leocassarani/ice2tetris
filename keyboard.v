@@ -3,13 +3,16 @@
 
 module keyboard (
   input clk,
+`ifdef VERILATOR
+  input [7:0] key,
+`endif
   inout ps2_clk, ps2_data,
   output [15:0] out
 );
 
 `ifdef VERILATOR
 
-assign out = 16'b0;
+assign out = { 8'b0, key };
 
 `else
 

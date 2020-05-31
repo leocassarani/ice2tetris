@@ -9,11 +9,13 @@ VGA::VGA()
     event_type = SDL_RegisterEvents(1);
 }
 
-VGA::~VGA() {
+VGA::~VGA()
+{
     SDL_Quit();
 }
 
-void VGA::run() {
+void VGA::run()
+{
     SDL_Init(SDL_INIT_VIDEO);
 
     window = {
@@ -59,7 +61,8 @@ void VGA::run() {
     }
 }
 
-void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t blue) {
+void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t blue)
+{
     h_count++;
 
     switch (h_state) {
@@ -124,4 +127,26 @@ void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t
         SDL_PushEvent(&event);
         dirty = false;
     }
+}
+
+uint8_t VGA::key_pressed()
+{
+    const uint8_t *state = SDL_GetKeyboardState(nullptr);
+
+    if (state[SDL_SCANCODE_LEFT])
+        return 130;
+
+    if (state[SDL_SCANCODE_UP])
+        return 131;
+
+    if (state[SDL_SCANCODE_RIGHT])
+        return 132;
+
+    if (state[SDL_SCANCODE_DOWN])
+        return 133;
+
+    if (state[SDL_SCANCODE_RETURN])
+        return 128;
+
+    return 0;
 }

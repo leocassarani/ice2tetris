@@ -8,6 +8,9 @@
 module computer (
   input CLK,
   input BTN_N,
+`ifdef VERILATOR
+  input [7:0] KEY,
+`endif
   inout FLASH_IO1,
   inout P2_1, P2_3,
   output LEDG_N,
@@ -58,6 +61,10 @@ memory memory (
   .vga_red({ P1A4, P1A3, P1A2, P1A1 }),
   .vga_blue({ P1A10, P1A9, P1A8, P1A7 }),
   .vga_green({ P1B4, P1B3, P1B2, P1B1 }),
+
+`ifdef VERILATOR
+  .key(KEY),
+`endif
 
   .ps2_clk(P2_3),
   .ps2_data(P2_1)

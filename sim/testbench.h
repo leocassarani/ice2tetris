@@ -23,9 +23,8 @@ public:
         close_trace();
     }
 
-    virtual void open_trace(string filename) {
+    virtual void open_trace(const string& filename) {
         Verilated::traceEverOn(true);
-
         trace = std::make_unique<VerilatedVcdC>();
         core.trace(trace.get(), 99);
         trace->open(filename.c_str());
