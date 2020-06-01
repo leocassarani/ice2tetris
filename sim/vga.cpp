@@ -1,104 +1,11 @@
 #include "vga.h"
 
-const int ScreenWidth = 640;
-const int ScreenHeight = 480;
-
 VGA::VGA()
 {
     pixels.assign(ScreenWidth * ScreenHeight, 0x0FFF);
-    event_type = SDL_RegisterEvents(1);
 }
 
-VGA::~VGA()
-{
-    SDL_Quit();
-}
-
-void VGA::run()
-{
-    SDL_Init(SDL_INIT_VIDEO);
-
-    window = {
-        SDL_CreateWindow(
-            "VGA (640 x 480 @ 60MHz)",
-            SDL_WINDOWPOS_CENTERED,
-            SDL_WINDOWPOS_CENTERED,
-            ScreenWidth,
-            ScreenHeight,
-            SDL_WINDOW_SHOWN
-        ),
-        SDL_DestroyWindow
-    };
-
-    renderer = {
-        SDL_CreateRenderer(window.get(), -1, 0),
-        SDL_DestroyRenderer
-    };
-
-    texture = {
-        SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGB444, SDL_TEXTUREACCESS_STREAMING, ScreenWidth, ScreenHeight),
-        SDL_DestroyTexture
-    };
-
-    bool exit = false;
-    SDL_Event e;
-
-    while (!exit) {
-        SDL_WaitEvent(&e);
-
-        if (e.type == event_type) {
-            SDL_UpdateTexture(texture.get(), NULL, pixels.data(), 2 * ScreenWidth);
-            SDL_RenderClear(renderer.get());
-            SDL_RenderCopy(renderer.get(), texture.get(), NULL, NULL);
-            SDL_RenderPresent(renderer.get());
-        } else {
-            switch (e.type) {
-                case SDL_KEYDOWN:
-                    key_down(e.key);
-                    break;
-                case SDL_KEYUP:
-                    key_up(e.key);
-                    break;
-                case SDL_QUIT:
-                    exit = true;
-                    break;
-            }
-        }
-    }
-}
-
-void VGA::key_down(const SDL_KeyboardEvent& event)
-{
-    key_code = event.keysym.sym;
-}
-
-void VGA::key_up(const SDL_KeyboardEvent& event)
-{
-    if (key_code == event.keysym.sym)
-        key_code = 0;
-}
-
-uint8_t VGA::key_pressed()
-{
-    switch (key_code) {
-    case SDLK_LEFT:
-        return 130;
-    case SDLK_UP:
-        return 131;
-    case SDLK_RIGHT:
-        return 132;
-    case SDLK_DOWN:
-        return 133;
-    case SDLK_RETURN:
-        return 128;
-    case SDLK_ESCAPE:
-        return 140;
-    default:
-        return 0;
-    }
-}
-
-void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t blue)
+void VGA::tick(uint8_t h_sync, uint8_t v_sync, uint8_t red, uint8_t green, uint8_t blue)
 {
     h_count++;
 
@@ -110,12 +17,12 @@ void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t
             }
             break;
         case ScanlineState::FrontPorch:
-            if (!hsync) {
+            if (!h_sync) {
                 h_state = ScanlineState::SyncPulse;
             }
             break;
         case ScanlineState::SyncPulse:
-            if (hsync) {
+            if (h_sync) {
                 h_state = ScanlineState::BackPorch;
                 h_count = 0;
             }
@@ -135,12 +42,12 @@ void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t
             }
             break;
         case ScanlineState::FrontPorch:
-            if (!vsync) {
+            if (!v_sync) {
                 v_state = ScanlineState::SyncPulse;
             }
             break;
         case ScanlineState::SyncPulse:
-            if (vsync) {
+            if (v_sync) {
                 v_state = ScanlineState::BackPorch;
                 v_count = 0;
             }
@@ -153,13 +60,12 @@ void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t
             break;
     }
 
-    if (h_state == ScanlineState::Visible && v_state == ScanlineState::Visible) {
+    if (h_visible() && v_visible()) {
         int i = h_count + v_count * ScreenWidth;
         pixels[i] = red << 8 | green << 4 | blue;
         dirty = true;
-    } else if (dirty && v_state != ScanlineState::Visible) {
-        SDL_Event event = { .type = event_type };
-        SDL_PushEvent(&event);
+    } else if (dirty && !v_visible()) {
+        if (display) display();
         dirty = false;
     }
 }

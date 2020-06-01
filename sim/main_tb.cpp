@@ -2,7 +2,6 @@
 #include "Vcomputer.h"
 #include "simulator.h"
 #include "testbench.h"
-#include "vga.h"
 
 using std::string;
 
@@ -19,13 +18,8 @@ int main(int argc, char **argv)
     if (trace_enabled)
         tb.open_trace("computer.vcd");
 
-    VGA vga;
-
-    Simulator sim(tb, vga);
-    sim.start();
-
-    vga.run();
-    sim.stop();
+    Simulator sim(tb);
+    sim.run();
 
     return 0;
 }
