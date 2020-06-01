@@ -5,7 +5,7 @@ const int ScreenHeight = 480;
 
 VGA::VGA()
 {
-    pixels.assign(3 * ScreenWidth * ScreenHeight, 0xFF);
+    pixels.assign(ScreenWidth * ScreenHeight, 0x0FFF);
     event_type = SDL_RegisterEvents(1);
 }
 
@@ -36,7 +36,7 @@ void VGA::run()
     };
 
     texture = {
-        SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STATIC, ScreenWidth, ScreenHeight),
+        SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGB444, SDL_TEXTUREACCESS_STATIC, ScreenWidth, ScreenHeight),
         SDL_DestroyTexture
     };
 
@@ -47,7 +47,7 @@ void VGA::run()
         SDL_WaitEvent(&e);
 
         if (e.type == event_type) {
-            SDL_UpdateTexture(texture.get(), NULL, pixels.data(), 3 * ScreenWidth);
+            SDL_UpdateTexture(texture.get(), NULL, pixels.data(), 2 * ScreenWidth);
             SDL_RenderClear(renderer.get());
             SDL_RenderCopy(renderer.get(), texture.get(), NULL, NULL);
             SDL_RenderPresent(renderer.get());
@@ -154,10 +154,8 @@ void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t
     }
 
     if (h_state == ScanlineState::Visible && v_state == ScanlineState::Visible) {
-        int i = 3 * (h_count + v_count * ScreenWidth);
-        pixels[i++] = red * 0xFF;
-        pixels[i++] = green * 0xFF;
-        pixels[i]   = blue * 0xFF;
+        int i = h_count + v_count * ScreenWidth;
+        pixels[i] = red << 8 | green << 4 | blue;
         dirty = true;
     } else if (dirty && v_state != ScanlineState::Visible) {
         SDL_Event event = { .type = event_type };

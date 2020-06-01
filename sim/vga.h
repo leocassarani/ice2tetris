@@ -28,7 +28,7 @@ class VGA {
         void key_up(const SDL_KeyboardEvent&);
         SDL_Keycode key_code;
 
-        vector<uint8_t> pixels;
+        vector<uint16_t> pixels;
         uint32_t event_type;
 
         ScanlineState h_state = ScanlineState::FrontPorch;
