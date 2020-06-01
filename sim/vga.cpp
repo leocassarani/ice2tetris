@@ -36,7 +36,7 @@ void VGA::run()
     };
 
     texture = {
-        SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGB444, SDL_TEXTUREACCESS_STATIC, ScreenWidth, ScreenHeight),
+        SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGB444, SDL_TEXTUREACCESS_STREAMING, ScreenWidth, ScreenHeight),
         SDL_DestroyTexture
     };
 
