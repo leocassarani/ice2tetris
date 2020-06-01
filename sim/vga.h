@@ -24,6 +24,10 @@ class VGA {
         uint8_t key_pressed();
 
     private:
+        void key_down(const SDL_KeyboardEvent&);
+        void key_up(const SDL_KeyboardEvent&);
+        SDL_Keycode key_code;
+
         vector<uint8_t> pixels;
         uint32_t event_type;
 

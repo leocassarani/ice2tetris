@@ -46,18 +46,55 @@ void VGA::run()
     while (!exit) {
         SDL_WaitEvent(&e);
 
-        switch (e.type) {
-            case SDL_QUIT:
-                exit = true;
-                break;
-        }
-
         if (e.type == event_type) {
             SDL_UpdateTexture(texture.get(), NULL, pixels.data(), 3 * ScreenWidth);
             SDL_RenderClear(renderer.get());
             SDL_RenderCopy(renderer.get(), texture.get(), NULL, NULL);
             SDL_RenderPresent(renderer.get());
+        } else {
+            switch (e.type) {
+                case SDL_KEYDOWN:
+                    key_down(e.key);
+                    break;
+                case SDL_KEYUP:
+                    key_up(e.key);
+                    break;
+                case SDL_QUIT:
+                    exit = true;
+                    break;
+            }
         }
+    }
+}
+
+void VGA::key_down(const SDL_KeyboardEvent& event)
+{
+    key_code = event.keysym.sym;
+}
+
+void VGA::key_up(const SDL_KeyboardEvent& event)
+{
+    if (key_code == event.keysym.sym)
+        key_code = 0;
+}
+
+uint8_t VGA::key_pressed()
+{
+    switch (key_code) {
+    case SDLK_LEFT:
+        return 130;
+    case SDLK_UP:
+        return 131;
+    case SDLK_RIGHT:
+        return 132;
+    case SDLK_DOWN:
+        return 133;
+    case SDLK_RETURN:
+        return 128;
+    case SDLK_ESCAPE:
+        return 140;
+    default:
+        return 0;
     }
 }
 
@@ -127,26 +164,4 @@ void VGA::tick(uint8_t hsync, uint8_t vsync, uint8_t red, uint8_t green, uint8_t
         SDL_PushEvent(&event);
         dirty = false;
     }
-}
-
-uint8_t VGA::key_pressed()
-{
-    const uint8_t *state = SDL_GetKeyboardState(nullptr);
-
-    if (state[SDL_SCANCODE_LEFT])
-        return 130;
-
-    if (state[SDL_SCANCODE_UP])
-        return 131;
-
-    if (state[SDL_SCANCODE_RIGHT])
-        return 132;
-
-    if (state[SDL_SCANCODE_DOWN])
-        return 133;
-
-    if (state[SDL_SCANCODE_RETURN])
-        return 128;
-
-    return 0;
 }
