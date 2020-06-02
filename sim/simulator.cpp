@@ -56,9 +56,17 @@ void Simulator::event_loop()
 
         switch (e.type) {
         case SDL_USEREVENT:
-            SDL_UpdateTexture(texture.get(), NULL, vga.pixels.data(), 2 * ScreenWidth);
-            SDL_RenderCopy(renderer.get(), texture.get(), NULL, NULL);
-            SDL_RenderPresent(renderer.get());
+            {
+                void *pixels;
+                int pitch;
+
+                SDL_LockTexture(texture.get(), nullptr, &pixels, &pitch);
+                vga.draw(static_cast<uint16_t *>(pixels));
+                SDL_UnlockTexture(texture.get());
+
+                SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
+                SDL_RenderPresent(renderer.get());
+            }
             break;
         case SDL_QUIT:
             exit = true;

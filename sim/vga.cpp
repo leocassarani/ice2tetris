@@ -5,6 +5,12 @@ VGA::VGA()
     pixels.assign(ScreenWidth * ScreenHeight, 0x0FFF);
 }
 
+void VGA::draw(uint16_t *dest)
+{
+    std::lock_guard<std::mutex> lock(pixels_mutex);
+    std::copy(pixels.begin(), pixels.end(), dest);
+}
+
 void VGA::tick(uint8_t h_sync, uint8_t v_sync, uint8_t red, uint8_t green, uint8_t blue)
 {
     h_count++;
@@ -62,6 +68,7 @@ void VGA::tick(uint8_t h_sync, uint8_t v_sync, uint8_t red, uint8_t green, uint8
 
     if (h_visible() && v_visible()) {
         int i = h_count + v_count * ScreenWidth;
+        std::lock_guard<std::mutex> lock(pixels_mutex);
         pixels[i] = red << 8 | green << 4 | blue;
         dirty = true;
     } else if (dirty && !v_visible()) {

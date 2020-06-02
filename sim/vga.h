@@ -2,6 +2,7 @@
 #define VGA_H
 
 #include <functional>
+#include <mutex>
 #include <vector>
 #include <SDL2/SDL.h>
 
@@ -18,12 +19,15 @@ enum class ScanlineState {
 class VGA {
     public:
         VGA();
+        void draw(uint16_t *);
         void tick(uint8_t vsync, uint8_t hsync, uint8_t red, uint8_t green, uint8_t blue);
 
         std::function<void()> display;
-        std::vector<uint16_t> pixels;
 
     private:
+        std::vector<uint16_t> pixels;
+        std::mutex pixels_mutex;
+
         ScanlineState h_state = ScanlineState::FrontPorch;
         ScanlineState v_state = ScanlineState::Visible;
 
