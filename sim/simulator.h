@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include "Vcomputer.h"
 #include "testbench.h"
+#include "keyboard.h"
 #include "vga.h"
 
 class Simulator {
@@ -17,6 +18,7 @@ public:
 
 private:
     TestBench<Vcomputer>& tb;
+    Keyboard keyboard;
     VGA vga;
 
     std::atomic<bool> exit = false;

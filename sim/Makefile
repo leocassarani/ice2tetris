@@ -11,7 +11,7 @@ OBJDIR := obj_dir
 CELLS_SIM := $(shell yosys-config --datdir/ice40/cells_sim.v)
 ROM_SIZE := $(shell wc -l program.hack | awk '{ print $$1 }')
 
-main_tb: main_tb.cpp simulator.cpp vga.cpp $(OBJDIR)/$(VTOP)__ALL.a
+main_tb: main_tb.cpp keyboard.cpp simulator.cpp vga.cpp $(OBJDIR)/$(VTOP)__ALL.a
 	$(CXX) $(CFLAGS) $(LDFLAGS) -I $(VINC) -I $(OBJDIR) $(VINC)/verilated.cpp $(VINC)/verilated_vcd_c.cpp $^ -o $@
 
 $(OBJDIR)/Vcomputer__ALL.a: $(OBJDIR)/$(VTOP).h $(OBJDIR)/$(VTOP).mk

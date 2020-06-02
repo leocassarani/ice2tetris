@@ -68,6 +68,12 @@ void Simulator::event_loop()
                 SDL_RenderPresent(renderer.get());
             }
             break;
+        case SDL_KEYDOWN:
+            keyboard.key_down(e.key.keysym);
+            break;
+        case SDL_KEYUP:
+            keyboard.key_up(e.key.keysym);
+            break;
         case SDL_QUIT:
             exit = true;
             break;
@@ -77,8 +83,8 @@ void Simulator::event_loop()
 
 void Simulator::simulate()
 {
-
     while (!exit) {
+        tb.core.KEY = keyboard.current_key();
         tb.tick();
 
         vga.tick(
