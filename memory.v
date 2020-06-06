@@ -6,9 +6,6 @@ module memory (
   input load,
   input [15:0] address,
   input [15:0] in,
-`ifdef VERILATOR
-  input [7:0] key,
-`endif
 
   output vga_h_sync, vga_v_sync,
   output [3:0] vga_red, vga_green, vga_blue,
@@ -59,9 +56,6 @@ screen screen (
 
 keyboard keyboard (
   .clk(clk),
-`ifdef VERILATOR
-  .key(key),
-`endif
   .ps2_clk(ps2_clk),
   .ps2_data(ps2_data),
   .out(kbd_out)

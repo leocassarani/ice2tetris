@@ -8,11 +8,8 @@
 module computer (
   input CLK,
   input BTN_N,
-`ifdef VERILATOR
-  input [7:0] KEY,
-`endif
   inout FLASH_IO1,
-  inout P2_1, P2_3,
+  inout PS2_DATA, PS2_CLK,
   output LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8,
@@ -62,12 +59,8 @@ memory memory (
   .vga_blue({ P1A10, P1A9, P1A8, P1A7 }),
   .vga_green({ P1B4, P1B3, P1B2, P1B1 }),
 
-`ifdef VERILATOR
-  .key(KEY),
-`endif
-
-  .ps2_clk(P2_3),
-  .ps2_data(P2_1)
+  .ps2_clk(PS2_CLK),
+  .ps2_data(PS2_DATA)
 );
 
 rom #(

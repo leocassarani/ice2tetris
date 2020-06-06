@@ -84,8 +84,12 @@ void Simulator::event_loop()
 void Simulator::simulate()
 {
     while (!exit) {
-        tb.core.KEY = keyboard.current_key();
         tb.tick();
+
+        keyboard.tick(
+            tb.core.PS2_CLK,
+            tb.core.PS2_DATA
+        );
 
         vga.tick(
             tb.core.P1B7,

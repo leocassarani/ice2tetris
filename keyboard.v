@@ -3,18 +3,9 @@
 
 module keyboard (
   input clk,
-`ifdef VERILATOR
-  input [7:0] key,
-`endif
   inout ps2_clk, ps2_data,
   output [15:0] out
 );
-
-`ifdef VERILATOR
-
-assign out = { 8'b0, key };
-
-`else
 
 localparam [7:0] LEFT_SHIFT   = 8'h12,
                  CAPS_LOCK    = 8'h58,
@@ -226,7 +217,7 @@ function [7:0] ascii(input [15:0] key, input caps_lock, input shift);
     16'h52: ascii = shift ? "\"" : "'";
     16'h54: ascii = shift ? "{" : "[";
     16'h55: ascii = shift ? "+" : "=";
-    16'h5A: ascii = 8'd128; // Newline
+    16'h5A: ascii = 8'd128; // Return
     16'h5B: ascii = shift ? "}" : "]";
     16'h5D: ascii = shift ? "|" : "\\";
     16'h66: ascii = 8'd129; // Backspace
@@ -248,8 +239,6 @@ function [7:0] ascii(input [15:0] key, input caps_lock, input shift);
     default: ascii = 8'h00; // No key press
   endcase
 endfunction
-
-`endif
 
 endmodule
 
@@ -337,6 +326,8 @@ wire ps2_data_tx = ps2_data_output_enable ? ps2_data_output : 0;
 reg delay_100us_enable, delay_20us_enable, delay_63clks_enable;
 wire delay_100us_done, delay_20us_done, delay_63clks_done;
 
+`ifdef SYNTHESIS
+
 (* PULLUP_RESISTOR = "10K" *)
 SB_IO #(
   .PIN_TYPE(6'b1010_00),
@@ -362,6 +353,13 @@ SB_IO #(
   .D_IN_0(ps2_data_rx),
   .D_OUT_0(ps2_data_tx)
 );
+
+`else
+
+assign ps2_clk_rx = ps2_clk;
+assign ps2_data_rx = ps2_data;
+
+`endif
 
 delay #(
   .DURATION(12'd2513) // 100µs × 25.125MHz = 2512.2
