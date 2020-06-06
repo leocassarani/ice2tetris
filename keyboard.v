@@ -180,7 +180,7 @@ function [7:0] ascii(input [15:0] key, input caps_lock, input shift);
     16'h0B: ascii = 8'd146; // F6
     16'h0C: ascii = 8'd144; // F4
     16'h0D: ascii = "\t";
-    16'h0E: ascii = shift ? "`" : "~";
+    16'h0E: ascii = shift ? "~" : "`";
     16'h15: ascii = (shift || caps_lock) ? "Q" : "q";
     16'h16: ascii = shift ? "!" : "1";
     16'h1A: ascii = (shift || caps_lock) ? "Z" : "z";
