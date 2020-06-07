@@ -1,8 +1,8 @@
 #ifndef PS2_H
 #define PS2_H
 
-#include <map>
 #include <optional>
+#include <unordered_map>
 #include <SDL2/SDL_scancode.h>
 
 struct PS2_Keycode {
@@ -10,7 +10,7 @@ struct PS2_Keycode {
     bool extended;
 };
 
-const std::map<SDL_Scancode, PS2_Keycode> ps2_keycodes = {
+const std::unordered_map<SDL_Scancode, PS2_Keycode> ps2_keycodes = {
     { SDL_SCANCODE_A, { 0x1C, false } },
     { SDL_SCANCODE_B, { 0x32, false } },
     { SDL_SCANCODE_C, { 0x21, false } },
