@@ -13,7 +13,7 @@ Simulator::Simulator(TestBench<Vcomputer>& tb) : tb(tb)
             SDL_WINDOWPOS_CENTERED,
             ScreenWidth,
             ScreenHeight,
-            SDL_WINDOW_SHOWN
+            SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
         ),
         SDL_DestroyWindow
     };
@@ -22,6 +22,8 @@ Simulator::Simulator(TestBench<Vcomputer>& tb) : tb(tb)
         SDL_CreateRenderer(window.get(), -1, 0),
         SDL_DestroyRenderer
     };
+
+    SDL_RenderSetLogicalSize(renderer.get(), ScreenWidth, ScreenHeight);
 
     texture = {
         SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGB444, SDL_TEXTUREACCESS_STREAMING, ScreenWidth, ScreenHeight),
@@ -64,6 +66,7 @@ void Simulator::event_loop()
                 vga.draw(static_cast<uint16_t *>(pixels));
                 SDL_UnlockTexture(texture.get());
 
+                SDL_RenderClear(renderer.get());
                 SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
                 SDL_RenderPresent(renderer.get());
             }
