@@ -50,6 +50,10 @@ endef
 run: $(BUILD_DIR)/$(TARGET)
 	$(BUILD_DIR)/$(TARGET)
 
+.PHONY: trace
+trace: $(BUILD_DIR)/$(TARGET)
+	$(BUILD_DIR)/$(TARGET) +trace
+
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)

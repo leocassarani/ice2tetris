@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include "Vcomputer.h"
 #include "testbench.h"
+#include "flash.h"
 #include "keyboard.h"
 #include "vga.h"
 
@@ -18,6 +19,8 @@ public:
 
 private:
     TestBench<Vcomputer>& tb;
+
+    Flash flash;
     Keyboard keyboard;
     VGA vga;
 

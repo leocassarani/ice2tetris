@@ -8,12 +8,12 @@
 module computer (
   input CLK,
   input BTN_N,
-  inout FLASH_IO1,
+  inout FLASH_MISO,
   inout PS2_DATA, PS2_CLK,
   output LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8,
-  output FLASH_SCK, FLASH_SSB, FLASH_IO0
+  output FLASH_CLK, FLASH_CS, FLASH_MOSI
 );
 
 wire clk_out, clk_locked;
@@ -72,10 +72,10 @@ rom #(
   .address(rom_address),
   .instruction(instruction),
 
-  .spi_cs(FLASH_SSB),
-  .spi_sclk(FLASH_SCK),
-  .spi_mosi(FLASH_IO0),
-  .spi_miso(FLASH_IO1)
+  .spi_cs(FLASH_CS),
+  .spi_clk(FLASH_CLK),
+  .spi_mosi(FLASH_MOSI),
+  .spi_miso(FLASH_MISO)
 );
 
 endmodule

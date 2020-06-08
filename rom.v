@@ -8,7 +8,7 @@ module rom (
   output ready,
 
   inout spi_miso,
-  output spi_cs, output spi_sclk, output spi_mosi
+  output spi_cs, output spi_clk, output spi_mosi
 );
 
 // Read a total of 64KiB from flash, i.e. the first 32Ki 16-bit addresses.
@@ -62,19 +62,6 @@ SB_SPRAM256KA spram_hi (
   .DATAOUT(ram_data_hi)
 );
 
-`ifdef VERILATOR
-
-spi_flash_sim #(
-  .SIZE(SIZE)
-) flash_sim (
-  .spi_cs(spi_cs),
-  .spi_sclk(spi_sclk),
-  .spi_mosi(spi_mosi),
-  .spi_miso(spi_miso)
-);
-
-`endif
-
 spi_flash_mem flash (
   .clk(clk),
   .clken(clken && loading),
@@ -84,7 +71,7 @@ spi_flash_mem flash (
   .ready(flash_ready),
 
   .spi_cs(spi_cs),
-  .spi_sclk(spi_sclk),
+  .spi_clk(spi_clk),
   .spi_mosi(spi_mosi),
   .spi_miso(spi_miso)
 );
@@ -107,19 +94,19 @@ module spi_flash_mem (
   output reg [15:0] rdata,
 
   input spi_miso,
-  output reg spi_cs, spi_sclk, spi_mosi
+  output reg spi_cs, spi_clk, spi_mosi
 );
 
 reg [15:0] buffer;
-reg [4:0] count;
-reg [1:0] state;
+reg [4:0] count = 0;
+reg [1:0] state = 0;
 
 always @(posedge clk) begin
   ready <= 0;
 
   if (!clken) begin
     spi_cs <= 1;
-    spi_sclk <= 1;
+    spi_clk <= 1;
     count <= 0;
     state <= 0;
   end else begin
@@ -161,9 +148,9 @@ always @(posedge clk) begin
       endcase
     end else begin
       // Flip the clock signal every cycle to simulate a half-speed clock.
-      spi_sclk <= ~spi_sclk;
+      spi_clk <= ~spi_clk;
 
-      if (spi_sclk) begin
+      if (spi_clk) begin
         // On the rising edge of the SPI clock, write the MSB of the buffer to
         // the flash SPI interface.
         spi_mosi <= buffer[15];
@@ -178,49 +165,3 @@ always @(posedge clk) begin
 end
 
 endmodule
-
-`ifdef VERILATOR
-
-module spi_flash_sim (
-  input spi_cs, spi_sclk, spi_mosi,
-  output reg spi_miso = 0
-);
-
-parameter [15:0] SIZE = 0;
-localparam IDXSIZE = $clog2(SIZE - 1) + 4;
-
-reg [15:0] rom [0:SIZE-1];
-reg [IDXSIZE-1:0] count = 0;
-
-localparam IDLE = 1'd0,
-           STREAM = 1'd1;
-
-reg state = IDLE;
-
-initial begin
-  $readmemb("program.hack", rom);
-end
-
-always @(posedge spi_sclk) begin
-  if (!spi_cs) begin
-    case (state)
-      IDLE: begin
-        if (count == 30) begin
-          count <= 0;
-          state <= STREAM;
-        end else begin
-          count <= count + 1;
-        end
-      end
-
-      STREAM: begin
-        spi_miso <= rom[count[IDXSIZE-1:4]][15 - count[3:0]];
-        count <= count + 1;
-      end
-    endcase
-  end
-end
-
-endmodule
-
-`endif

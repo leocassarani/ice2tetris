@@ -2,7 +2,9 @@
 #include <thread>
 #include "simulator.h"
 
-Simulator::Simulator(TestBench<Vcomputer>& tb) : tb(tb)
+Simulator::Simulator(TestBench<Vcomputer>& tb)
+    : tb(tb),
+      flash(Flash("program.hack"))
 {
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -84,10 +86,22 @@ void Simulator::event_loop()
     }
 }
 
+inline uint8_t vga_color(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+{
+    return 0x0F & (a << 3 | b << 2 | c << 1 | d);
+}
+
 void Simulator::simulate()
 {
     while (!exit) {
         tb.tick();
+
+        flash.tick(
+            tb.core.FLASH_CS,
+            tb.core.FLASH_CLK,
+            tb.core.FLASH_MOSI,
+            tb.core.FLASH_MISO
+        );
 
         keyboard.tick(
             tb.core.PS2_CLK,
@@ -97,9 +111,9 @@ void Simulator::simulate()
         vga.tick(
             tb.core.P1B7,
             tb.core.P1B8,
-            tb.core.P1A4  << 3 | tb.core.P1A3 << 2 | tb.core.P1A2 << 1 | tb.core.P1A1,
-            tb.core.P1B4  << 3 | tb.core.P1B3 << 2 | tb.core.P1B2 << 1 | tb.core.P1B1,
-            tb.core.P1A10 << 3 | tb.core.P1A9 << 2 | tb.core.P1A8 << 1 | tb.core.P1A7
+            vga_color(tb.core.P1A4, tb.core.P1A3, tb.core.P1A2, tb.core.P1A1),
+            vga_color(tb.core.P1B4, tb.core.P1B3, tb.core.P1B2, tb.core.P1B1),
+            vga_color(tb.core.P1A10, tb.core.P1A9, tb.core.P1A8, tb.core.P1A7)
         );
     }
 }
