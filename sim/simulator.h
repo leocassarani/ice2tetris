@@ -25,13 +25,15 @@ private:
     VGA vga;
 
     std::atomic<bool> exit = false;
+    std::atomic<bool> reset = false;
 
     std::unique_ptr<SDL_Window, void(*)(SDL_Window *)> window{nullptr, nullptr};
     std::unique_ptr<SDL_Renderer, void(*)(SDL_Renderer *)> renderer{nullptr, nullptr};
     std::unique_ptr<SDL_Texture, void(*)(SDL_Texture *)> texture{nullptr, nullptr};
 
-    void event_loop();
     void simulate();
+    void event_loop();
+    void key_press(const SDL_KeyboardEvent&);
 };
 
 #endif

@@ -2,7 +2,7 @@
 set_io CLK        35
 
 # LEDs and Button
-set_io BTN_N      10
+set_io RESET_N    10
 set_io LEDG_N     37
 
 # SPI Flash

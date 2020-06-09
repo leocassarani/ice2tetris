@@ -74,15 +74,32 @@ void Simulator::event_loop()
             }
             break;
         case SDL_KEYDOWN:
-            keyboard.key_down(e.key.keysym);
-            break;
         case SDL_KEYUP:
-            keyboard.key_up(e.key.keysym);
+            key_press(e.key);
             break;
         case SDL_QUIT:
             exit = true;
             break;
         }
+    }
+}
+
+void Simulator::key_press(const SDL_KeyboardEvent& e)
+{
+    auto keysym = e.keysym;
+    auto pressed = e.state == SDL_PRESSED;
+
+    if (keysym.mod & (KMOD_CTRL | KMOD_GUI)) {
+        switch (keysym.sym) {
+        case SDLK_r:
+            // Cmd+R or Ctrl+R will simulate pressing the reset button.
+            reset = pressed;
+            break;
+        }
+    } else if (pressed) {
+        keyboard.key_down(keysym);
+    } else {
+        keyboard.key_up(keysym);
     }
 }
 
@@ -94,6 +111,7 @@ inline uint8_t vga_color(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 void Simulator::simulate()
 {
     while (!exit) {
+        tb.core.RESET_N = !reset;
         tb.tick();
 
         flash.tick(

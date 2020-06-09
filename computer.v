@@ -7,7 +7,7 @@
 
 module computer (
   input CLK,
-  input BTN_N,
+  input RESET_N,
   inout FLASH_MISO,
   inout PS2_DATA, PS2_CLK,
   output LEDG_N,
@@ -24,7 +24,7 @@ wire [15:0] instruction;
 wire [15:0] mem_address, mem_rdata, mem_wdata;
 wire mem_busy, mem_load;
 
-wire reset = !rom_ready || !BTN_N;
+wire reset = !rom_ready || !RESET_N;
 assign LEDG_N = !rom_ready;
 
 clock clock (
