@@ -33,6 +33,8 @@ private:
 
     void simulate();
     void event_loop();
+
+    void repaint();
     void key_press(const SDL_KeyboardEvent&);
 };
 

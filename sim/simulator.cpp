@@ -60,18 +60,7 @@ void Simulator::event_loop()
 
         switch (e.type) {
         case SDL_USEREVENT:
-            {
-                void *pixels;
-                int pitch;
-
-                SDL_LockTexture(texture.get(), nullptr, &pixels, &pitch);
-                vga.draw(static_cast<uint16_t *>(pixels));
-                SDL_UnlockTexture(texture.get());
-
-                SDL_RenderClear(renderer.get());
-                SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
-                SDL_RenderPresent(renderer.get());
-            }
+            repaint();
             break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
@@ -82,6 +71,20 @@ void Simulator::event_loop()
             break;
         }
     }
+}
+
+void Simulator::repaint()
+{
+    void *pixels;
+    int pitch;
+
+    SDL_LockTexture(texture.get(), nullptr, &pixels, &pitch);
+    vga.draw(static_cast<uint16_t *>(pixels));
+    SDL_UnlockTexture(texture.get());
+
+    SDL_RenderClear(renderer.get());
+    SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
+    SDL_RenderPresent(renderer.get());
 }
 
 void Simulator::key_press(const SDL_KeyboardEvent& e)
