@@ -8,7 +8,9 @@ VROOT := $(shell verilator -V | grep VERILATOR_ROOT | head -1 | awk '{ print $$3
 VINC := $(VROOT)/include
 
 CELLS_SIM := $(shell yosys-config --datdir/ice40/cells_sim.v)
-ROM_SIZE := $(shell wc -l program.hack | awk '{ print $$1 }')
+
+# This can be overwritten at build time for smaller ROMs and faster loading times.
+ROM_SIZE := 32768
 
 OBJ_DIR := ./obj_dir
 BUILD_DIR := ./build
