@@ -1,7 +1,30 @@
-PROJ = computer
-ADD_SRC = alu.v clock.v cpu.v keyboard.v memory.v ram.v rom.v screen.v vga.v vram.v
+SUBMAKE := make --no-print-directory -C
 
-PIN_DEF = icebreaker.pcf
-DEVICE = up5k
+# Fully expand the path to the ROM variable so that the make tasks in the
+# subdirectories only have to deal with absolute paths.
+override ROM := $(abspath $(ROM))
 
-include main.mk
+.PHONY: rtl
+rtl:
+	@$(SUBMAKE) rtl
+
+.PHONY: prog
+prog:
+	@$(SUBMAKE) rtl prog
+
+.PHONY: flash
+flash:
+	@$(SUBMAKE) rtl flash ROM=$(ROM)
+
+.PHONY: sim
+sim:
+	@$(SUBMAKE) sim
+
+.PHONY: test
+test:
+	@$(SUBMAKE) sim run ROM=$(ROM)
+
+.PHONY: clean
+clean:
+	@$(SUBMAKE) rtl clean
+	@$(SUBMAKE) sim clean

@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <memory>
+#include <string>
 #include <SDL2/SDL.h>
 #include "Vcomputer.h"
 #include "testbench.h"
@@ -10,9 +11,11 @@
 #include "keyboard.h"
 #include "vga.h"
 
+using std::string;
+
 class Simulator {
 public:
-    Simulator(TestBench<Vcomputer>& tb);
+    Simulator(TestBench<Vcomputer>& tb, const string& rom);
     ~Simulator();
 
     void run();

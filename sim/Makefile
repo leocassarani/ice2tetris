@@ -1,7 +1,7 @@
 TOP := computer
 VTOP := V$(TOP)
 
-VDIR := ..
+VDIR := ../rtl
 VSRC := $(wildcard $(VDIR)/*.v)
 
 VROOT := $(shell verilator -V | grep VERILATOR_ROOT | head -1 | awk '{ print $$3 }')
@@ -50,11 +50,11 @@ endef
 
 .PHONY: run
 run: $(BUILD_DIR)/$(TARGET)
-	$(BUILD_DIR)/$(TARGET)
+	$(BUILD_DIR)/$(TARGET) $(if $(ROM),+rom=$(ROM),)
 
 .PHONY: trace
 trace: $(BUILD_DIR)/$(TARGET)
-	$(BUILD_DIR)/$(TARGET) +trace
+	$(BUILD_DIR)/$(TARGET) $(if $(ROM),+rom=$(ROM),) +trace
 
 .PHONY: clean
 clean:
