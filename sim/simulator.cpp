@@ -2,9 +2,9 @@
 #include <thread>
 #include "simulator.h"
 
-Simulator::Simulator(TestBench<Vcomputer>& tb)
+Simulator::Simulator(TestBench<Vcomputer>& tb, const string& rom)
     : tb(tb),
-      flash(Flash("program.hack"))
+      flash(Flash(rom))
 {
     SDL_Init(SDL_INIT_VIDEO);
 
