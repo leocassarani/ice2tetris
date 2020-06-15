@@ -15,7 +15,7 @@ enum class FlashState {
 class Flash {
 public:
     Flash(const string& filename)
-        : file(std::ifstream(filename)) {};
+        : file(std::ifstream(filename, std::ios::binary)) {};
 
     void tick(uint8_t spi_cs, uint8_t spi_clk, uint8_t spi_mosi, uint8_t& spi_miso);
 
