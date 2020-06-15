@@ -18,7 +18,7 @@ BUILD_DIR := ./build
 INCFLAGS := -I $(VINC) -I $(OBJ_DIR)
 LDFLAGS := -lSDL2
 CXXSTD := -std=c++17
-CXXFLAGS := $(CXXSTD) $(INCFLAGS) -Wall -MMD -MP
+CXXFLAGS := $(CXXSTD) $(INCFLAGS) -O2 -Wall -MMD -MP
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(SRCS:%.cpp=$(BUILD_DIR)/%.o) $(BUILD_DIR)/verilated.o $(BUILD_DIR)/verilated_vcd_c.o
