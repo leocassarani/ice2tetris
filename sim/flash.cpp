@@ -68,16 +68,16 @@ void Flash::tick(uint8_t spi_cs, uint8_t spi_clk, uint8_t spi_mosi, uint8_t& spi
 
 void Flash::fill_wbuf()
 {
-    string str;
-    std::getline(file, str);
+    uint16_t instr;
+    file.read(reinterpret_cast<char *>(&instr), 2);
 
     if (file.good()) {
-        // Convert the string to an integer in base 2.
-        int i = std::stoi(str, nullptr, 2);
-        wbuf = static_cast<uint16_t>(i);
+        // Convert the 16-bit instruction from big-endian, which is how it's
+        // stored on disk, to the endianness of the host that we're running on.
+        wbuf = ntohs(instr);
     } else {
         // If we've reached past the end of the file, return 0xFF to mimic the
-        // behaviour of the W25Q128JV chip.
+        // behaviour of the SPI flash chip.
         wbuf = 0xFF;
     }
 }

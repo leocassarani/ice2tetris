@@ -14,7 +14,7 @@ string rom_flag()
     // If there's no equal sign, or if the equal sign is the last character in
     // the string (no RHS), then default to a known filename.
     if (i == string::npos || i == len - 1)
-        return "program.hack";
+        return "program.bin";
 
     return flag.substr(i + 1, flag.length());
 }
