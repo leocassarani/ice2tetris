@@ -77,9 +77,9 @@ void Flash::fill_wbuf()
         // stored on disk, to the endianness of the host that we're running on.
         wbuf = ntohs(instr);
     } else {
-        // If we've reached past the end of the file, return 0xFF to mimic the
+        // If we've reached past the end of the file, return 0xFFFF to mimic the
         // behaviour of the SPI flash chip.
-        wbuf = 0xFF;
+        wbuf = 0xFFFF;
     }
 }
 
