@@ -1,9 +1,18 @@
 #include <arpa/inet.h>
+#include <cstdio>
 #include "flash.h"
 
 // The program ROM starts at 1024KiB, so we want to ensure that the SPI master
 // is trying to access the correct base address.
 const uint32_t FlashBaseAddr = 0x100000;
+
+Flash::Flash(const string& filename)
+{
+    file.open(filename, std::ifstream::binary);
+
+    if (!file.is_open())
+        std::perror("warning: couldn't open ROM file");
+}
 
 void Flash::tick(uint8_t spi_cs, uint8_t spi_clk, uint8_t spi_mosi, uint8_t& spi_miso)
 {
