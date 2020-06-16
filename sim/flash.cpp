@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include "flash.h"
 
 // The program ROM starts at 1024KiB, so we want to ensure that the SPI master
