@@ -16,7 +16,7 @@ OBJ_DIR := ./obj_dir
 BUILD_DIR := ./build
 
 INCFLAGS := -I $(VINC) -I $(OBJ_DIR)
-LDFLAGS := -lSDL2
+LDFLAGS := -lSDL2 -lpthread
 CXXSTD := -std=c++17
 CXXFLAGS := $(CXXSTD) $(INCFLAGS) -O2 -Wall -MMD -MP
 
