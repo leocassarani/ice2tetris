@@ -41,7 +41,7 @@ $(OBJ_DIR)/$(VTOP)__ALL.a: $(OBJ_DIR)/$(VTOP).mk
 $(OBJ_DIR)/$(VTOP).mk: $(OBJ_DIR)/$(VTOP).h
 
 $(OBJ_DIR)/$(VTOP).h: $(VSRC)
-	verilator -CFLAGS $(CXXSTD) -I$(VDIR) -cc -trace -Wno-lint +define+ROM_SIZE=$(ROM_SIZE) --top-module $(TOP) $(TOP).v $(CELLS_SIM)
+	verilator -CFLAGS $(CXXSTD) -I$(VDIR) -cc -trace -Wno-lint +define+NO_ICE40_DEFAULT_ASSIGNMENTS +define+ROM_SIZE=$(ROM_SIZE) --top-module $(TOP) $(TOP).v $(CELLS_SIM)
 
 define build-cpp
 	@mkdir -p $(dir $@)
