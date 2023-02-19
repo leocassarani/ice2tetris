@@ -36,7 +36,7 @@ $(BUILD_DIR)/%.o: $(VINC)/%.cpp
 	$(build-cpp)
 
 $(OBJ_DIR)/$(VTOP)__ALL.a: $(OBJ_DIR)/$(VTOP).mk
-	make -C $(OBJ_DIR) -f $(VTOP).mk
+	$(MAKE) -C $(OBJ_DIR) -f $(VTOP).mk
 
 $(OBJ_DIR)/$(VTOP).mk: $(OBJ_DIR)/$(VTOP).h
 
