@@ -12,41 +12,28 @@ CELLS_SIM := $(shell yosys-config --datdir/ice40/cells_sim.v)
 # This can be overwritten at build time for smaller ROMs and faster loading times.
 ROM_SIZE := 32768
 
-OBJ_DIR := ./obj_dir
-BUILD_DIR := ./build
+BUILD_DIR := ./obj_dir
 
-INCFLAGS := -I $(VINC) -I $(OBJ_DIR)
-LDFLAGS := -lSDL2 -lpthread
+LDFLAGS := -lSDL2
 CXXSTD := -std=c++17
-CXXFLAGS := $(CXXSTD) $(INCFLAGS) -O2 -Wall -MMD -MP
-
-SRCS := $(wildcard *.cpp)
-OBJS := $(SRCS:%.cpp=$(BUILD_DIR)/%.o) $(BUILD_DIR)/verilated.o $(BUILD_DIR)/verilated_vcd_c.o
-DEPS := $(OBJS:.o=.d)
 
 TARGET := computer_tb
+CXXSRC := $(wildcard *.cpp)
 
-$(BUILD_DIR)/$(TARGET): $(OBJS) $(OBJ_DIR)/$(VTOP)__ALL.a
-	$(CXX) $^ -o $@ $(LDFLAGS)
+$(BUILD_DIR)/$(TARGET): $(BUILD_DIR)/$(VTOP).mk
+	$(MAKE) -C $(BUILD_DIR) -f $(VTOP).mk
 
-$(BUILD_DIR)/%.o: %.cpp $(OBJ_DIR)/$(VTOP).h
-	$(build-cpp)
-
-$(BUILD_DIR)/%.o: $(VINC)/%.cpp
-	$(build-cpp)
-
-$(OBJ_DIR)/$(VTOP)__ALL.a: $(OBJ_DIR)/$(VTOP).mk
-	$(MAKE) -C $(OBJ_DIR) -f $(VTOP).mk
-
-$(OBJ_DIR)/$(VTOP).mk: $(OBJ_DIR)/$(VTOP).h
-
-$(OBJ_DIR)/$(VTOP).h: $(VSRC)
-	verilator -CFLAGS $(CXXSTD) -I$(VDIR) -cc -trace -Wno-lint +define+NO_ICE40_DEFAULT_ASSIGNMENTS +define+ROM_SIZE=$(ROM_SIZE) --top-module $(TOP) $(TOP).v $(CELLS_SIM)
-
-define build-cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-endef
+$(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
+	verilator -CFLAGS $(CXXSTD) \
+		  -LDFLAGS $(LDFLAGS) \
+		  -I$(VDIR) \
+		  -o $(TARGET) \
+		  --cc --exe --trace -O2 \
+		  -Wall -Wno-lint \
+		  +define+NO_ICE40_DEFAULT_ASSIGNMENTS \
+		  +define+ROM_SIZE=$(ROM_SIZE) \
+		  --top-module $(TOP) \
+		  $(CELLS_SIM) $^
 
 .PHONY: run
 run: $(BUILD_DIR)/$(TARGET)
@@ -59,6 +46,3 @@ trace: $(BUILD_DIR)/$(TARGET)
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -rf $(OBJ_DIR)
-
--include $(DEPS)

@@ -1,4 +1,3 @@
-build
 obj_dir
 *.hack
 *.vcd
