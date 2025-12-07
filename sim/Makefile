@@ -4,7 +4,7 @@ VTOP := V$(TOP)
 VDIR := ../rtl
 VSRC := $(wildcard $(VDIR)/*.v)
 
-VROOT := $(shell verilator -V | grep VERILATOR_ROOT | head -1 | awk '{ print $$3 }')
+VROOT := $(shell verilator -V | grep VERILATOR_ROOT | tail -1 | awk '{ print $$3 }')
 VINC := $(VROOT)/include
 
 CELLS_SIM := $(shell yosys-config --datdir/ice40/cells_sim.v)
