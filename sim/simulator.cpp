@@ -125,8 +125,8 @@ void Simulator::simulate()
         );
 
         keyboard.tick(
-            tb.core.PS2_CLK,
-            tb.core.PS2_DATA
+            tb.core.P2_3,
+            tb.core.P2_1
         );
 
         vga.tick(
