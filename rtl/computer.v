@@ -9,7 +9,14 @@ module computer (
   input CLK,
   input RESET_N,
   inout FLASH_MISO,
+
+  `ifdef PS2_KEYBOARD
   inout P2_1, P2_3,
+  `elsif SNES_CONTROLLER
+  input P2_7,
+  output P2_8, P2_9,
+  `endif
+
   output LEDG_N,
   output P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10,
   output P1B1, P1B2, P1B3, P1B4, P1B7, P1B8,
@@ -59,8 +66,14 @@ memory memory (
   .vga_blue({ P1A10, P1A9, P1A8, P1A7 }),
   .vga_green({ P1B4, P1B3, P1B2, P1B1 }),
 
+  `ifdef PS2_KEYBOARD
   .ps2_clk(P2_3),
   .ps2_data(P2_1)
+  `elsif SNES_CONTROLLER
+  .snes_clk(P2_9),
+  .snes_latch(P2_8),
+  .snes_data(P2_7)
+  `endif
 );
 
 rom #(

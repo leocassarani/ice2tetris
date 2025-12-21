@@ -18,7 +18,7 @@ all: $(TOP).bin $(TOP).rpt
 	nextpnr-ice40 --$(DEVICE) --package $(PACKAGE) --json $(filter-out $<,$^) --pcf $< --asc $@
 
 %.json: %.v $(SRC)
-	yosys -ql $*.log -p 'synth_ice40 -top $(TOP) -json $@' $^
+	yosys -ql $*.log -DPS2_KEYBOARD -p 'synth_ice40 -top $(TOP) -json $@' $^
 
 .PHONY: prog
 prog: $(TOP).bin

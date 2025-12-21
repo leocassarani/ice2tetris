@@ -32,6 +32,7 @@ $(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
 		  -Wall -Wno-lint \
 		  +define+NO_ICE40_DEFAULT_ASSIGNMENTS \
 		  +define+ROM_SIZE=$(ROM_SIZE) \
+		  +define+PS2_KEYBOARD \
 		  --top-module $(TOP) \
 		  $(CELLS_SIM) $^
 

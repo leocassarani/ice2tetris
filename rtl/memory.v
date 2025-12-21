@@ -9,7 +9,13 @@ module memory (
 
   output vga_h_sync, vga_v_sync,
   output [3:0] vga_red, vga_green, vga_blue,
+
+  `ifdef PS2_KEYBOARD
   inout ps2_clk, ps2_data,
+  `elsif SNES_CONTROLLER
+  input snes_data,
+  output snes_clk, snes_latch,
+  `endif
 
   output busy,
   output [15:0] out
@@ -54,12 +60,22 @@ screen screen (
   .vga_blue(vga_blue)
 );
 
+`ifdef PS2_KEYBOARD
 keyboard keyboard (
   .clk(clk),
   .ps2_clk(ps2_clk),
   .ps2_data(ps2_data),
   .out(kbd_out)
 );
+`elsif SNES_CONTROLLER
+snes_controller controller (
+  .clk(clk),
+  .snes_data(snes_data),
+  .snes_clk(snes_clk),
+  .snes_latch(snes_latch),
+  .out(kbd_out)
+);
+`endif
 
 always @(posedge clk) begin
   ram_select_1 <= ram_select_0;

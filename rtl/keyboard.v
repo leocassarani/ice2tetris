@@ -362,7 +362,8 @@ assign ps2_data_rx = ps2_data;
 `endif
 
 delay #(
-  .DURATION(12'd2513) // 100µs × 25.125MHz = 2512.2
+  .DURATION(12'd2513), // 100µs @ 25.125MHz = 2512.2
+  .CONTINUOUS(1'b0)
 ) delay_100us (
   .clk(clk),
   .enable(delay_100us_enable),
@@ -370,7 +371,8 @@ delay #(
 );
 
 delay #(
-  .DURATION(9'd503) // 20µs × 25.125MHz = 502.5
+  .DURATION(9'd503), // 20µs @ 25.125MHz = 502.5
+  .CONTINUOUS(1'b0)
 ) delay_20us (
   .clk(clk),
   .enable(delay_20us_enable),
@@ -378,7 +380,8 @@ delay #(
 );
 
 delay #(
-  .DURATION(6'd63)
+  .DURATION(6'd63),
+  .CONTINUOUS(1'b0)
 ) delay_63clks (
   .clk(clk),
   .enable(delay_63clks_enable),
@@ -512,32 +515,6 @@ always @(posedge clk) begin
       end
     end
   endcase
-end
-
-endmodule
-
-module delay #(
-  parameter DURATION = 0
-) (
-  input clk,
-  input enable,
-  output done
-);
-
-// Add 1 to ensure we maintain an upper bound if DURATION is a power of 2.
-localparam BIT_LENGTH = $clog2(DURATION) + 1;
-
-reg [(BIT_LENGTH - 1):0] count;
-assign done = count == DURATION;
-
-always @(posedge clk) begin
-  if (enable) begin
-    if (!done) begin
-      count <= count + 1;
-    end
-  end else begin
-    count <= 0;
-  end
 end
 
 endmodule
