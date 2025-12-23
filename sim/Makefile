@@ -20,7 +20,8 @@ CXXSTD := -std=c++17
 TARGET := computer_tb
 CXXSRC := $(wildcard *.cpp)
 
-$(BUILD_DIR)/$(TARGET): $(BUILD_DIR)/$(VTOP).mk
+.PHONY: build
+build: $(BUILD_DIR)/$(VTOP).mk
 	$(MAKE) -C $(BUILD_DIR) -f $(VTOP).mk
 
 $(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
@@ -28,7 +29,7 @@ $(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
 		  -LDFLAGS $(LDFLAGS) \
 		  -I$(VDIR) \
 		  -o $(TARGET) \
-		  --cc --exe --trace -O2 \
+		  --cc --exe --trace --MMD -O2 \
 		  -Wall -Wno-lint \
 		  +define+NO_ICE40_DEFAULT_ASSIGNMENTS \
 		  +define+ROM_SIZE=$(ROM_SIZE) \
@@ -37,11 +38,11 @@ $(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
 		  $(CELLS_SIM) $^
 
 .PHONY: run
-run: $(BUILD_DIR)/$(TARGET)
+run: build
 	$(BUILD_DIR)/$(TARGET) $(if $(ROM),+rom=$(ROM),)
 
 .PHONY: trace
-trace: $(BUILD_DIR)/$(TARGET)
+trace: build
 	$(BUILD_DIR)/$(TARGET) $(if $(ROM),+rom=$(ROM),) +trace
 
 .PHONY: clean
