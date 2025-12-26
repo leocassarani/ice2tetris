@@ -14,6 +14,8 @@ ROM_SIZE := 32768
 
 BUILD_DIR := ./obj_dir
 
+INPUT_DEVICE := $(if $(SNES),SNES_CONTROLLER,PS2_KEYBOARD)
+CFLAGS := "-std=c++17 -D$(INPUT_DEVICE)"
 LDFLAGS := -lSDL2
 CXXSTD := -std=c++17
 
@@ -25,7 +27,8 @@ build: $(BUILD_DIR)/$(VTOP).mk
 	$(MAKE) -C $(BUILD_DIR) -f $(VTOP).mk
 
 $(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
-	verilator -CFLAGS $(CXXSTD) \
+	verilator \
+		  -CFLAGS $(CFLAGS) \
 		  -LDFLAGS $(LDFLAGS) \
 		  -I$(VDIR) \
 		  -o $(TARGET) \
@@ -33,7 +36,7 @@ $(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
 		  -Wall -Wno-lint \
 		  +define+NO_ICE40_DEFAULT_ASSIGNMENTS \
 		  +define+ROM_SIZE=$(ROM_SIZE) \
-		  +define+PS2_KEYBOARD \
+		  +define+$(INPUT_DEVICE) \
 		  --top-module $(TOP) \
 		  $(CELLS_SIM) $^
 

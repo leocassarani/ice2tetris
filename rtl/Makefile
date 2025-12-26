@@ -4,6 +4,7 @@ SRC := $(wildcard *.v)
 PIN_DEF := icebreaker.pcf
 DEVICE := up5k
 PACKAGE := sg48
+INPUT_DEVICE := $(if $(SNES),SNES_CONTROLLER,PS2_KEYBOARD)
 
 .PHONY: all
 all: $(TOP).bin $(TOP).rpt
@@ -18,7 +19,7 @@ all: $(TOP).bin $(TOP).rpt
 	nextpnr-ice40 --$(DEVICE) --package $(PACKAGE) --json $(filter-out $<,$^) --pcf $< --asc $@
 
 %.json: %.v $(SRC)
-	yosys -ql $*.log -DPS2_KEYBOARD -p 'synth_ice40 -top $(TOP) -json $@' $^
+	yosys -ql $*.log -D$(INPUT_DEVICE) -p 'synth_ice40 -top $(TOP) -json $@' $^
 
 .PHONY: prog
 prog: $(TOP).bin

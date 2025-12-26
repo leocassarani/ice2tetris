@@ -1,4 +1,3 @@
-#include <functional>
 #include <thread>
 #include "simulator.h"
 
@@ -100,10 +99,28 @@ void Simulator::key_press(const SDL_KeyboardEvent& e)
             break;
         }
     } else if (pressed) {
-        keyboard.key_down(keysym);
+        key_down(keysym);
     } else {
-        keyboard.key_up(keysym);
+        key_up(keysym);
     }
+}
+
+void Simulator::key_down(SDL_Keysym& keysym)
+{
+#ifdef PS2_KEYBOARD
+    keyboard.key_down(keysym);
+#elif defined(SNES_CONTROLLER)
+    snes.key_down(keysym);
+#endif
+}
+
+void Simulator::key_up(SDL_Keysym& keysym)
+{
+#ifdef PS2_KEYBOARD
+    keyboard.key_up(keysym);
+#elif defined(SNES_CONTROLLER)
+    snes.key_up(keysym);
+#endif
 }
 
 inline uint8_t vga_color(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
@@ -124,10 +141,18 @@ void Simulator::simulate()
             tb.core.FLASH_MISO
         );
 
+#ifdef PS2_KEYBOARD
         keyboard.tick(
             tb.core.P2_3,
             tb.core.P2_1
         );
+#elif defined(SNES_CONTROLLER)
+        snes.tick(
+          tb.core.P2_9,
+          tb.core.P2_8,
+          tb.core.P2_7
+        );
+#endif
 
         vga.tick(
             tb.core.P1B7,

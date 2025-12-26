@@ -9,6 +9,7 @@
 #include "testbench.h"
 #include "flash.h"
 #include "keyboard.h"
+#include "snes.h"
 #include "vga.h"
 
 using std::string;
@@ -24,8 +25,13 @@ private:
     TestBench<Vcomputer>& tb;
 
     Flash flash;
-    Keyboard keyboard;
     VGA vga;
+
+#ifdef PS2_KEYBOARD
+    Keyboard keyboard;
+#elif defined(SNES_CONTROLLER)
+    SNES snes;
+#endif
 
     std::atomic<bool> exit = false;
     std::atomic<bool> reset = false;
@@ -36,9 +42,11 @@ private:
 
     void simulate();
     void event_loop();
-
     void repaint();
+
     void key_press(const SDL_KeyboardEvent&);
+    void key_up(SDL_Keysym&);
+    void key_down(SDL_Keysym&);
 };
 
 #endif
