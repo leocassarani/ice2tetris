@@ -3,7 +3,7 @@ This project is an FPGA implementation of the [Nand to Tetris](https://www.nand2
 
 When connected to a screen and keyboard using the [VGA](https://store.digilentinc.com/pmod-vga-video-graphics-array/) and [PS/2](https://store.digilentinc.com/pmod-ps2-keyboard-mouse-connector/) Pmods, this system is capable of running any valid Hack program, achieving full compatibility with the Java-based software emulator provided with the course materials. The program ROM can be uploaded as a binary file to the iCEBreaker board’s onboard flash chip and will be read into memory at boot time.
 
-This system is entirely built on open source software and uses the [Open Tool Forge FPGA toolchain](https://github.com/open-tool-forge/fpga-toolchain), particularly [Yosys](https://github.com/YosysHQ/yosys) for Verilog synthesis, [Project IceStorm](https://github.com/YosysHQ/icestorm) for iCE40 support, and [nextpnr](https://github.com/YosysHQ/nextpnr) for place-and-route.
+This system is entirely built on open source software and uses the [OSS CAD Suite FPGA toolchain](https://github.com/YosysHQ/oss-cad-suite-build), particularly [Yosys](https://github.com/YosysHQ/yosys) for Verilog synthesis, [Project IceStorm](https://github.com/YosysHQ/icestorm) for iCE40 support, and [nextpnr](https://github.com/YosysHQ/nextpnr) for place-and-route.
 
 In addition, an interactive [Verilator](http://verilator.org) simulation of the design can be found in the `sim` directory. Based on the SDL2 multimedia library, the simulator captures the VGA signal and renders it on the screen; as well as providing an emulated SPI flash ROM chip and a PS/2 virtual keyboard.
 
@@ -54,7 +54,7 @@ When the simulator starts, the Verilog logic will send SPI “read” operations
 Whenever a key is pressed, if its key code is supported by the Hack platform, it will be translated into PS/2 signals and sent to the simulated keyboard client. Note that as the Hack platform only supports one key press at a time, only the more recent of multiple simultaneous key presses will be picked up by the simulated logic. Pressing either Ctrl+R or ⌘R will reset the simulator and restart execution.
 
 ## Acknowledgments
-Thanks to everyone on the [1BitSquared Discord](https://1bitsquared.com/pages/chat) `#icebreaker` channel who volunteered to help whenever I got stuck. Particular thanks to [Ed Bordin](https://github.com/edbordin),  [Dave Shah](https://github.com/daveshah1), [Piotr Esden-Tempski](https://github.com/esden), and [Sylvain “tnt” Munaut](https://github.com/smunaut).
+Thanks to everyone on the [1BitSquared Discord](https://1bitsquared.com/pages/chat) `#icebreaker` channel who volunteered to help whenever I got stuck. Particular thanks to [Ed Bordin](https://github.com/edbordin),  [Myrtle Shah](https://github.com/gatecat), [Piotr Esden-Tempski](https://github.com/esden), and [Sylvain “tnt” Munaut](https://github.com/smunaut).
 
 My [VRAM](https://github.com/leocassarani/ice2tetris/blob/master/rtl/vram.v) implementation was inspired by [smunaut/ice40-playground](https://github.com/smunaut/ice40-playground) and my [PS/2 driver](https://github.com/leocassarani/ice2tetris/blob/master/rtl/keyboard.v) was adapted from the [PS/2 mouse reference system on the Digilent website](https://reference.digilentinc.com/reference/pmod/pmodps2/start).
 
