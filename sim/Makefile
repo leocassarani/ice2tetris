@@ -4,9 +4,6 @@ VTOP := V$(TOP)
 VDIR := ../rtl
 VSRC := $(wildcard $(VDIR)/*.v)
 
-VROOT := $(shell verilator -V | grep VERILATOR_ROOT | tail -1 | awk '{ print $$3 }')
-VINC := $(VROOT)/include
-
 CELLS_SIM := $(shell yosys-config --datdir/ice40/cells_sim.v)
 
 # This can be overwritten at build time for smaller ROMs and faster loading times.
@@ -30,7 +27,6 @@ $(BUILD_DIR)/$(VTOP).mk: $(CXXSRC) $(VSRC)
 	verilator \
 		  -CFLAGS $(CFLAGS) \
 		  -LDFLAGS $(LDFLAGS) \
-		  -I$(VDIR) \
 		  -o $(TARGET) \
 		  --cc --exe --trace --MMD -O2 \
 		  -Wall -Wno-lint \
